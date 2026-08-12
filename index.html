@@ -51,3 +51,84 @@
       <div class="grid">
         <div class="task">
           <div>
+import 'package:flutter/material.dart';
+
+void main() => runApp(const TikBoostApp());
+
+class TikBoostApp extends StatelessWidget {
+  const TikBoostApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'TikBoost',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF0A0F1E),
+        primaryColor: const Color(0xFFFF2D6A),
+        appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent, elevation: 0),
+      ),
+      home: const AuthGate(),
+    );
+  }
+}
+
+/// 1. LOGIN / ONBOARDING SCREEN
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            colors: [Color(0xFF2A1A4A), Color(0xFF0A0F1E)],
+            center: Alignment.topCenter,
+            radius: 1.2
+          )
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(alignment: Alignment.center, children: [
+              SizedBox(
+                width: 120, height: 120,
+                child: CircularProgressIndicator(strokeWidth: 4, valueColor: AlwaysStoppedAnimation(Colors.pink.withOpacity(0.6))),
+              ),
+              const CircleAvatar(radius: 40, backgroundColor: Colors.white, child: Icon(Icons.person, size: 50, color: Colors.black)),
+            ]),
+            const SizedBox(height: 20),
+            const Text("TikBoost", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+            const Text("Boost profile & videos", style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 30),
+            TextField(
+              decoration: InputDecoration(
+                hintText: "@username",
+                prefixText: "@",
+                filled: true,
+                fillColor: const Color(0xFF1A233A),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text("*Enter your username, not your display name. The profile must be public.", 
+              style: TextStyle(fontSize: 12, color: Colors.grey), textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF2D6A),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))
+                ),
+                onPressed: () {
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainWrapper()));
+                },
+                child: const Text("Continue", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            TextButton(onPressed: () {}, child: const Text("Cannot find your username?", style: TextStyle(decoration: TextDecoration.underline)))
+          ],
+        ),
