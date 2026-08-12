@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikGrow - Earn Coins, Grow TikTok</title>
+<style>
+  *{box-sizing:border-box; margin:0; padding:0; font-family:'Segoe UI', sans-serif;}
+  body{background:#0a0a0a; color:#fff;}
+  header{background:linear-gradient(90deg,#ff0050,#ff4081); padding:16px 20px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:10;}
+  header h1{font-size:20px;}
+  .coins-badge{background:#000; padding:6px 12px; border-radius:20px; font-weight:bold; color:#ffd700;}
+  .container{max-width:900px; margin:20px auto; padding:16px;}
+  .card{background:#111; padding:20px; border-radius:14px; margin-bottom:20px; border:1px solid #222;}
+  h2{color:#ff0050; margin-bottom:12px;}
+  h3{margin:10px 0; color:#ddd;}
+  input{width:100%; padding:12px; border-radius:8px; border:1px solid #333; background:#1a1a1a; color:#fff; margin-bottom:10px;}
+  button{background:#ff0050; color:#fff; border:none; padding:12px 18px; border-radius:8px; cursor:pointer; font-weight:bold; transition:0.2s;}
+  button:hover{background:#e60047;}
+  button.secondary{background:#333;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px;}
+  .task, .product{background:#1a1a1a; padding:16px; border-radius:10px; display:flex; justify-content:space-between; align-items:center;}
+  .badge{font-size:12px; background:#222; padding:4px 8px; border-radius:6px;}
+  footer{text-align:center; padding:30px; font-size:12px; color:#777;}
+  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#ff0050; padding:12px 20px; border-radius:8px; display:none; z-index:99;}
+  ul{list-style:none; padding-left:0;}
+  ul li{padding:6px 0; border-bottom:1px solid #222;}
+</style>
+</head>
+<body>
+<header>
+  <h1>TikGrow</h1>
+  <div class="coins-badge">Coins: <span id="coins">0</span></div>
+</header>
+
+<div class="container">
+
+  <div class="card" id="auth-card">
+    <h2>Get Started</h2>
+    <p>Verify with your TikTok username to earn and spend coins</p>
+    <input id="username" placeholder="@yourusername">
+    <input id="email" type="email" placeholder="your email">
+    <button onclick="saveUser()">Continue</button>
+  </div>
+
+  <div id="app" style="display:none;">
+    
+    <div class="card">
+      <h2>Earn Coins</h2>
+      <p>Complete tasks. Coins are added instantly.</p>
+      <div class="grid">
+        <div class="task">
+          <div>
