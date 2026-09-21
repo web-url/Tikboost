@@ -2,97 +2,101 @@ code = r'''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>FF Trainer — Aim Training Room</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FF TRAINER 3D — Aim Training Room</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { width:100%; height:100%; overflow:hidden; background:#0b0e13; font-family:'Segoe UI',Arial,sans-serif; user-select:none; }
-  #game { display:block; width:100vw; height:100vh; cursor:crosshair; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#000; font-family:'Segoe UI',Arial,sans-serif; user-select:none; touch-action:none; }
+  #c3d { position:fixed; inset:0; }
+  #c2d { position:fixed; inset:0; pointer-events:none; z-index:30; }
 
-  /* ---------- Top bar (Quick Settings style) ---------- */
-  #topbar { position:fixed; top:0; left:0; right:0; height:46px; display:flex; align-items:center; justify-content:space-between;
-    padding:0 12px; z-index:50; background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0)); pointer-events:none; }
+  /* ---------- Top bar ---------- */
+  #topbar { position:fixed; top:0; left:0; right:0; height:48px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 12px; z-index:60; background:linear-gradient(180deg,rgba(0,0,0,.6),transparent); pointer-events:none; }
   #topbar > * { pointer-events:auto; }
-  .tb-btn { background:#ffb300; color:#111; font-weight:700; border:none; border-radius:6px; padding:7px 14px; cursor:pointer; font-size:13px; box-shadow:0 2px 6px rgba(0,0,0,.4); }
-  .tb-btn.dark { background:#1d232e; color:#ffd54f; border:1px solid #3a4356; }
-  .tb-btn:hover { filter:brightness(1.1); }
-  #cashBox { color:#ffd54f; font-weight:700; font-size:15px; background:rgba(0,0,0,.5); padding:6px 12px; border-radius:20px; }
-  #levelSel { background:#1d232e; color:#fff; border:1px solid #3a4356; border-radius:6px; padding:7px 8px; font-size:13px; }
+  .tb-btn { background:#ffb300; color:#111; font-weight:800; border:none; border-radius:6px; padding:8px 14px; cursor:pointer; font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.5); }
+  .tb-btn.dark { background:rgba(20,26,36,.9); color:#ffd54f; border:1px solid #3a4356; }
+  #cashBox { color:#ffd54f; font-weight:800; background:rgba(0,0,0,.55); padding:7px 13px; border-radius:20px; font-size:14px; }
+  #levelSel { background:rgba(20,26,36,.9); color:#fff; border:1px solid #3a4356; border-radius:6px; padding:8px 6px; font-size:12px; }
 
-  /* ---------- Fire button ---------- */
-  #fireBtn { position:fixed; border-radius:50%; z-index:40; display:flex; align-items:center; justify-content:center;
-    background:radial-gradient(circle at 35% 30%, rgba(255,220,80,.9), rgba(200,120,0,.75));
-    border:3px solid rgba(255,255,255,.7); box-shadow:0 0 18px rgba(255,180,0,.45), inset 0 0 14px rgba(0,0,0,.35);
-    cursor:pointer; touch-action:none; }
-  #fireBtn::after { content:'🔥'; font-size:44%; }
+  /* ---------- HUD controls ---------- */
+  #joyBase { position:fixed; width:120px; height:120px; border-radius:50%; z-index:45;
+    background:radial-gradient(circle, rgba(255,255,255,.06), rgba(255,255,255,.14));
+    border:2px solid rgba(255,255,255,.35); display:none; }
+  #joyKnob { position:fixed; width:52px; height:52px; border-radius:50%; z-index:46;
+    background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.85), rgba(180,180,180,.6));
+    box-shadow:0 3px 10px rgba(0,0,0,.5); display:none; }
+
+  #fireBtn { position:fixed; border-radius:50%; z-index:45; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 35% 30%, rgba(255,220,80,.95), rgba(190,110,0,.8));
+    border:3px solid rgba(255,255,255,.75); box-shadow:0 0 20px rgba(255,180,0,.5), inset 0 0 14px rgba(0,0,0,.35);
+    font-size:34px; touch-action:none; }
+  .hudbtn { position:fixed; z-index:44; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:rgba(20,26,36,.75); border:2px solid rgba(255,255,255,.3); color:#fff; font-size:20px; touch-action:none; }
+  #btnJump { width:58px; height:58px; right:26px; bottom:210px; }
+  #btnReload { width:50px; height:50px; right:150px; bottom:120px; font-size:17px; }
+  #btnCrouch { width:50px; height:50px; right:56px; bottom:96px; font-size:17px; }
+  #btnLock { width:50px; height:50px; left:16px; top:60px; font-size:17px; border-radius:10px; }
 
   /* ---------- Crosshair ---------- */
-  #crosshair { position:fixed; z-index:39; width:34px; height:34px; margin:-17px 0 0 -17px; pointer-events:none; }
-  #crosshair::before, #crosshair::after { content:''; position:absolute; background:#37ff8b; box-shadow:0 0 4px #000; }
-  #crosshair::before { left:50%; top:0; width:2px; height:100%; margin-left:-1px; clip-path:polygon(0 0,100% 0,100% 32%,0 32%,0 68%,100% 68%,100% 100%,0 100%); }
-  #crosshair::after { top:50%; left:0; height:2px; width:100%; margin-top:-1px; clip-path:polygon(0 0,32% 0,32% 100%,0 100%,68% 0,100% 0,100% 100%,68% 100%); }
+  #cross { position:fixed; left:50%; top:50%; width:36px; height:36px; margin:-18px 0 0 -18px; z-index:40; pointer-events:none; transition:transform .08s; }
+  #cross::before, #cross::after { content:''; position:absolute; background:#37ff8b; box-shadow:0 0 4px #000; }
+  #cross::before { left:50%; top:0; width:2px; height:100%; margin-left:-1px; clip-path:polygon(0 0,100% 0,100% 30%,0 30%,0 70%,100% 70%,100% 100%,0 100%); }
+  #cross::after { top:50%; left:0; height:2px; width:100%; margin-top:-1px; clip-path:polygon(0 0,30% 0,30% 100%,0 100%,70% 0,100% 0,100% 100%,70% 100%); }
+  #hitmark { position:fixed; left:50%; top:50%; width:40px; height:40px; margin:-20px 0 0 -20px; z-index:41; pointer-events:none; opacity:0; font-size:34px; color:#ffd54f; font-weight:900; text-align:center; line-height:40px; text-shadow:0 0 6px #000; }
 
-  /* ---------- AI Coach bubble ---------- */
-  #coach { position:fixed; z-index:45; max-width:280px; background:rgba(8,12,20,.88); border:1px solid #37ff8b; border-radius:10px;
-    padding:10px 12px; color:#eafff2; font-size:12.5px; line-height:1.5; display:none; box-shadow:0 4px 18px rgba(0,0,0,.5); }
+  /* ---------- Coach ---------- */
+  #coach { position:fixed; z-index:55; max-width:270px; background:rgba(8,12,20,.9); border:1px solid #37ff8b; border-radius:10px;
+    padding:10px 12px; color:#eafff2; font-size:12.5px; line-height:1.55; display:none; box-shadow:0 4px 18px rgba(0,0,0,.6); }
   #coach b { color:#37ff8b; }
-  #coach .tag { display:inline-block; background:#37ff8b; color:#04140a; font-weight:800; font-size:10px; padding:2px 7px; border-radius:4px; margin-bottom:6px; letter-spacing:.5px; }
+  #coach .tag { display:inline-block; background:#37ff8b; color:#04140a; font-weight:800; font-size:10px; padding:2px 7px; border-radius:4px; margin-bottom:5px; }
 
-  /* ---------- Side buttons ---------- */
-  #sideBtns { position:fixed; right:10px; top:60px; z-index:50; display:flex; flex-direction:column; gap:8px; }
-  .side-btn { width:46px; height:46px; border-radius:10px; background:rgba(20,26,36,.85); border:1px solid #3a4356; color:#ffd54f; font-size:20px; cursor:pointer; }
-  .side-btn:hover { background:#232c3d; }
-
-  /* ---------- Toggle pills (head/body) ---------- */
-  #hitToggle { position:fixed; left:12px; bottom:16px; z-index:50; display:flex; background:rgba(15,20,28,.85); border:1px solid #3a4356; border-radius:24px; overflow:hidden; }
-  #hitToggle button { border:none; background:transparent; color:#9aa7bb; padding:9px 16px; font-weight:700; font-size:12px; cursor:pointer; }
+  #hitToggle { position:fixed; left:12px; bottom:16px; z-index:55; display:flex; background:rgba(15,20,28,.85); border:1px solid #3a4356; border-radius:24px; overflow:hidden; }
+  #hitToggle button { border:none; background:transparent; color:#9aa7bb; padding:9px 15px; font-weight:800; font-size:11px; cursor:pointer; }
   #hitToggle button.on { background:#37ff8b; color:#04140a; }
 
+  #ammo { position:fixed; right:18px; top:58px; z-index:55; color:#fff; font-weight:800; font-size:14px; background:rgba(0,0,0,.5); padding:6px 12px; border-radius:8px; }
+  #wpnTag { position:fixed; right:18px; top:96px; z-index:55; color:#ffd54f; font-weight:700; font-size:11px; background:rgba(0,0,0,.4); padding:4px 10px; border-radius:6px; }
+
   /* ---------- Panels ---------- */
-  .panel { position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; }
+  .panel { position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.75); display:none; align-items:center; justify-content:center; }
   .panel.open { display:flex; }
-  .card { width:min(560px,94vw); max-height:88vh; overflow-y:auto; background:#12161f; border:1px solid #2c3547; border-radius:14px; padding:22px; color:#dbe4f0; }
+  .card { width:min(580px,94vw); max-height:88vh; overflow-y:auto; background:#12161f; border:1px solid #2c3547; border-radius:14px; padding:22px; color:#dbe4f0; }
   .card h2 { color:#ffd54f; font-size:19px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; }
   .card h2 .x { cursor:pointer; color:#ff5a6a; font-size:22px; }
   .card .sub { color:#7f8ba0; font-size:12px; margin-bottom:16px; }
-
   .wgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
-  .wcard { background:#1a2130; border:1px solid #2c3547; border-radius:10px; padding:12px; cursor:pointer; transition:.15s; }
+  .wcard { background:#1a2130; border:1px solid #2c3547; border-radius:10px; padding:12px; cursor:pointer; }
   .wcard:hover { border-color:#ffb300; }
   .wcard.equipped { border-color:#37ff8b; box-shadow:0 0 10px rgba(55,255,139,.25); }
   .wcard .wn { font-weight:800; color:#fff; font-size:14px; }
   .wcard .ws { font-size:11px; color:#8fa0ba; margin:5px 0; line-height:1.55; }
   .wcard .wp { color:#ffd54f; font-weight:700; font-size:13px; }
-  .wcard.locked { opacity:.65; }
-
   .row { display:flex; align-items:center; gap:12px; margin:14px 0; }
-  .row label { width:120px; font-size:13px; color:#aeb9cc; }
+  .row label { width:110px; font-size:13px; color:#aeb9cc; }
   .row input[type=range] { flex:1; accent-color:#ffb300; }
-  .row .val { width:52px; text-align:right; color:#ffd54f; font-weight:700; font-size:13px; }
+  .row .val { width:48px; text-align:right; color:#ffd54f; font-weight:700; font-size:13px; }
   .btn { background:#ffb300; color:#111; border:none; border-radius:8px; padding:10px 18px; font-weight:800; cursor:pointer; font-size:13px; }
   .btn.ghost { background:#1d232e; color:#ffd54f; border:1px solid #3a4356; }
   .btn.green { background:#37ff8b; }
   .btnrow { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
-
   textarea#hudCode { width:100%; height:64px; background:#0b0f16; color:#7fe7a8; border:1px solid #2c3547; border-radius:8px; padding:10px; font-size:11px; resize:none; }
   .ai-box { background:#0d1420; border:1px solid #1f3a2c; border-radius:10px; padding:14px; margin-top:14px; font-size:12.5px; line-height:1.65; color:#bfe9cf; }
   .ai-box .h { color:#37ff8b; font-weight:800; letter-spacing:.5px; font-size:11px; }
-  .pill { display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:700; }
-  .pill.b { background:#2b6cb0; color:#fff; } .pill.a { background:#b07a2b; color:#fff; } .pill.p { background:#c53030; color:#fff; }
-
-  #toast { position:fixed; top:56px; left:50%; transform:translateX(-50%); z-index:200; background:#111827; color:#fff; border:1px solid #37ff8b;
+  #toast { position:fixed; top:58px; left:50%; transform:translateX(-50%); z-index:210; background:#111827; color:#fff; border:1px solid #37ff8b;
     padding:10px 20px; border-radius:24px; font-size:13px; display:none; box-shadow:0 6px 20px rgba(0,0,0,.6); }
-  #hpBar { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); width:240px; height:9px; background:rgba(0,0,0,.55); border-radius:6px; z-index:35; overflow:hidden; border:1px solid rgba(255,255,255,.15); }
-  #hpFill { height:100%; width:100%; background:linear-gradient(90deg,#37ff8b,#a3ff37); transition:width .2s; }
 </style>
 </head>
 <body>
-<canvas id="game"></canvas>
+<div id="c3d"></div>
+<canvas id="c2d"></canvas>
 
 <div id="topbar">
   <button class="tb-btn" onclick="openPanel('shopPanel')">🛒 SHOP</button>
   <div style="display:flex;gap:8px;align-items:center;">
     <button class="tb-btn dark" onclick="openPanel('hudPanel')">🎮 HUD</button>
+    <button class="tb-btn dark" onclick="openPanel('sensPanel')">🎯 SENS</button>
     <select id="levelSel" onchange="setLevel(this.value)">
       <option value="beginner">🟦 BEGINNER</option>
       <option value="advanced">🟧 ADVANCED</option>
@@ -102,48 +106,48 @@ code = r'''<!DOCTYPE html>
   <div id="cashBox">💰 <span id="cash">500</span></div>
 </div>
 
-<div id="sideBtns">
-  <button class="side-btn" onclick="openPanel('sensPanel')" title="Sensitivity">🎯</button>
-  <button class="side-btn" onclick="openPanel('helpPanel')" title="Help">❓</button>
-</div>
-
-<div id="hitToggle">
-  <button id="tgHead" class="on" onclick="setTargetMode('head')">🎯 HEADSHOT</button>
-  <button id="tgBody" onclick="setTargetMode('body')">👤 BODY</button>
-</div>
-
-<div id="fireBtn"></div>
-<div id="crosshair"></div>
+<div id="joyBase"></div><div id="joyKnob"></div>
+<div id="fireBtn">🔥</div>
+<div class="hudbtn" id="btnJump">⬆</div>
+<div class="hudbtn" id="btnReload">R</div>
+<div class="hudbtn" id="btnCrouch">🧎</div>
+<div class="hudbtn" id="btnLock" title="HUD edit lock">🔓</div>
+<div id="cross"></div><div id="hitmark">✕</div>
 <div id="coach"></div>
-<div id="hpBar"><div id="hpFill"></div></div>
+<div id="ammo">30/30</div><div id="wpnTag">UMP</div>
+<div id="hitToggle">
+  <button id="tgHead" class="on" onclick="setTargetMode('head')">HEADSHOT</button>
+  <button id="tgBody" onclick="setTargetMode('body')">BODY</button>
+</div>
 <div id="toast"></div>
 
-<!-- ============ SHOP ============ -->
+<!-- SHOP -->
 <div class="panel" id="shopPanel"><div class="card">
   <h2>WEAPONS SHOP <span class="x" onclick="closePanels()">✖</span></h2>
-  <div class="sub">Earn cash from hits & kills in training. Buy & equip to train with.</div>
+  <div class="sub">Earn cash from hits & kills. Buy & equip to train with.</div>
   <div class="wgrid" id="wgrid"></div>
 </div></div>
 
-<!-- ============ HUD ============ -->
+<!-- HUD -->
 <div class="panel" id="hudPanel"><div class="card">
-  <h2>HUD CUSTOMIZE <span class="x" onclick="closePanels()">✖</span></h2>
-  <div class="sub">Drag the fire button, tune it, then export / import a HUD code (like Free Fire's "Obtain HUD").</div>
-  <div class="row"><label>Button Size</label><input type="range" id="hudSize" min="50" max="160" value="100" oninput="hudPreview()"><span class="val" id="hudSizeV">100</span></div>
-  <div class="row"><label>Opacity</label><input type="range" id="hudOp" min="20" max="100" value="90" oninput="hudPreview()"><span class="val" id="hudOpV">90%</span></div>
+  <h2>CUSTOMIZE HUD <span class="x" onclick="closePanels()">✖</span></h2>
+  <div class="sub">Drag the FIRE button anywhere (unlock 🔓 first). Export your code or paste one to load it — like Free Fire's "Obtain HUD".</div>
+  <div class="row"><label>Fire Button</label><input type="range" id="hudSize" min="60" max="170" value="110" oninput="hudApply()"><span class="val" id="hudSizeV">110</span></div>
+  <div class="row"><label>Opacity</label><input type="range" id="hudOp" min="20" max="100" value="92" oninput="hudApply()"><span class="val" id="hudOpV">92%</span></div>
+  <div class="row"><label>Joystick</label><input type="range" id="hudJoy" min="80" max="180" value="120" oninput="hudApply()"><span class="val" id="hudJoyV">120</span></div>
   <div class="btnrow">
     <button class="btn ghost" onclick="hudRandom()">🎲 Random</button>
     <button class="btn" onclick="hudExport()">📤 EXPORT CODE</button>
     <button class="btn green" onclick="hudImport()">📥 OBTAIN HUD</button>
   </div>
-  <textarea id="hudCode" placeholder="Your HUD code appears here... paste a code here to load it."></textarea>
+  <textarea id="hudCode" placeholder="HUD code appears here / paste code here..."></textarea>
   <div class="ai-box" id="hudAI"></div>
 </div></div>
 
-<!-- ============ SENSITIVITY ============ -->
+<!-- SENS -->
 <div class="panel" id="sensPanel"><div class="card">
   <h2>SENSITIVITY <span class="x" onclick="closePanels()">✖</span></h2>
-  <div class="sub">The AI builds a sensitivity matched to YOUR fire-button size & position.</div>
+  <div class="sub">AI builds sensitivity matched to YOUR fire-button size & position.</div>
   <div class="row"><label>General</label><input type="range" id="sGen" min="10" max="200" value="100" oninput="sensRead()"><span class="val" id="sGenV">100</span></div>
   <div class="row"><label>Red Dot</label><input type="range" id="sRed" min="10" max="200" value="100" oninput="sensRead()"><span class="val" id="sRedV">100</span></div>
   <div class="row"><label>2x Scope</label><input type="range" id="s2x" min="10" max="200" value="90" oninput="sensRead()"><span class="val" id="s2xV">90</span></div>
@@ -153,367 +157,545 @@ code = r'''<!DOCTYPE html>
   <div class="ai-box" id="sensAI"></div>
 </div></div>
 
-<!-- ============ HELP ============ -->
-<div class="panel" id="helpPanel"><div class="card">
-  <h2>HOW TO TRAIN <span class="x" onclick="closePanels()">✖</span></h2>
-  <div class="sub" style="margin-bottom:10px;">Move mouse to aim · <b style="color:#ffd54f">Hold CLICK or press FIRE button to shoot</b> · R to reload</div>
-  <div class="ai-box">
-    <div class="h">🟦 BEGINNER</div>Enemies move slowly. The AI draws a <b>line from your FIRE button</b> to the enemy's head with exact drag instructions based on distance. Follow the line → headshot.<br><br>
-    <div class="h">🟧 ADVANCED</div>Faster enemies, smaller heads. The AI only shows a short guide-line while you hold the fire button — no text.<br><br>
-    <div class="h">🟥 PRO</div>No lines, no help. Fast strafing enemies, tiny head hitboxes, weapon spread. Pure muscle memory.
-  </div>
-</div></div>
-
 <script>
-/* ==================================================================
-   FF TRAINER — aim training room prototype
-   ================================================================== */
-const cv = document.getElementById('game'), cx = cv.getContext('2d');
-let W, H;
-function resize(){ W = cv.width = innerWidth; H = cv.height = innerHeight; }
-addEventListener('resize', resize); resize();
+/* ================================================================
+   FF TRAINER 3D — third-person aim training room
+   ================================================================ */
+const isTouch = ('ontouchstart' in window);
+const c2 = document.getElementById('c2d'), ctx2 = c2.getContext('2d');
+function fit2(){ c2.width = innerWidth; c2.height = innerHeight; }
+addEventListener('resize', fit2); fit2();
 
-/* ---------------- Data ---------------- */
-const WEAPONS = [
-  { id:'ump',   name:'UMP',      price:0,    dmg:22, rpm:600, spread:2.2, color:'#9fb7d9', auto:true  },
-  { id:'mp5',   name:'MP5',      price:600,  dmg:20, rpm:750, spread:2.6, color:'#d9c79f', auto:true  },
-  { id:'p90',   name:'P90',      price:900,  dmg:19, rpm:900, spread:3.2, color:'#c9a0e8', auto:true  },
-  { id:'ak',    name:'AK',       price:1200, dmg:34, rpm:550, spread:1.8, color:'#e8a0a0', auto:true  },
-  { id:'m4',    name:'M4A1',     price:1100, dmg:28, rpm:650, spread:1.4, color:'#a0e8b4', auto:true  },
-  { id:'awm',   name:'AWM',      price:2500, dmg:95, rpm:45,  spread:0.2, color:'#ffd54f', auto:false },
-  { id:'desert',name:'DESERT EAGLE', price:800, dmg:48, rpm:220, spread:1.2, color:'#e8d9a0', auto:false },
-  { id:'thompson',name:'THOMPSON', price:1500, dmg:26, rpm:700, spread:2.0, color:'#d9a06a', auto:true },
-];
+/* ---------------- Three.js scene ---------------- */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a2027);
+scene.fog = new THREE.Fog(0x1a2027, 30, 90);
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 200);
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.getElementById('c3d').appendChild(renderer.domElement);
+addEventListener('resize', () => { camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); fit2(); });
+
+scene.add(new THREE.AmbientLight(0x8899aa, 0.55));
+const sun = new THREE.DirectionalLight(0xfff2dd, 0.9);
+sun.position.set(8, 18, 6); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left=-30; sun.shadow.camera.right=30; sun.shadow.camera.top=30; sun.shadow.camera.bottom=-30;
+scene.add(sun);
+
+/* ---------------- Training room (warehouse) ---------------- */
+const RM = { w: 44, d: 44, h: 10 };
+const matFloor = new THREE.MeshStandardMaterial({ color:0x3a4048, roughness:0.9 });
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(RM.w, RM.d), matFloor);
+floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
+// floor grid lines
+const grid = new THREE.GridHelper(RM.w, 22, 0x556070, 0x2c333d); grid.position.y = 0.01; scene.add(grid);
+
+const matWall = new THREE.MeshStandardMaterial({ color:0x4a5568, roughness:0.85 });
+function wall(w, h, x, y, z, ry){
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matWall);
+  m.position.set(x, y, z); m.rotation.y = ry; m.receiveShadow = true; scene.add(m);
+}
+wall(RM.w, RM.h, 0, RM.h/2, -RM.d/2, 0);
+wall(RM.w, RM.h, 0, RM.h/2,  RM.d/2, Math.PI);
+wall(RM.d, RM.h, -RM.w/2, RM.h/2, 0, Math.PI/2);
+wall(RM.d, RM.h,  RM.w/2, RM.h/2, 0, -Math.PI/2);
+// ceiling
+const ceil = new THREE.Mesh(new THREE.PlaneGeometry(RM.w, RM.d), new THREE.MeshStandardMaterial({ color:0x2b323c }));
+ceil.rotation.x = Math.PI/2; ceil.position.y = RM.h; scene.add(ceil);
+// ceiling lights
+for (let i=-1;i<=1;i++) for (let j=-1;j<=1;j++){
+  const l = new THREE.Mesh(new THREE.BoxGeometry(4, 0.15, 1), new THREE.MeshBasicMaterial({ color:0xdfeaff }));
+  l.position.set(i*12, RM.h-0.1, j*12); scene.add(l);
+  const pl = new THREE.PointLight(0xcfe0ff, 0.35, 30); pl.position.set(i*12, RM.h-1, j*12); scene.add(pl);
+}
+// window strips on walls
+const matGlass = new THREE.MeshStandardMaterial({ color:0x9fd8e8, roughness:0.2, metalness:0.4, emissive:0x224a55, emissiveIntensity:0.6 });
+for (let i=-1;i<=1;i++){
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(8, 2.2), matGlass);
+  win.position.set(i*13, 6, -RM.d/2 + 0.05); scene.add(win);
+  const win2 = win.clone(); win2.position.set(i*13, 6, RM.d/2 - 0.05); win2.rotation.y = Math.PI; scene.add(win2);
+}
+// crates & cover (like the screenshots)
+const matCrate = new THREE.MeshStandardMaterial({ color:0x7a8455, roughness:0.9 });
+const matCrate2 = new THREE.MeshStandardMaterial({ color:0x6b7280, roughness:0.9 });
+const matTire = new THREE.MeshStandardMaterial({ color:0x1f2226, roughness:0.95 });
+const covers = [];
+function crate(x, z, s, mat, ry){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), mat||matCrate);
+  m.position.set(x, s/2, z); m.rotation.y = ry||0; m.castShadow = m.receiveShadow = true;
+  scene.add(m); covers.push(m);
+}
+crate(-8,-6,2.2); crate(-6.2,-6.4,2.2); crate(-7.2,-6.2,2.2,matCrate2,0.4); crate(-7,-4.4,2.2);
+crate(6,-10,2.4,matCrate2); crate(8,-9.4,2.0); crate(7,-8.2,2.2);
+crate(-12,4,2.0,matCrate2); crate(-10.4,4.6,2.2); crate(11,6,2.3); crate(12.6,5.2,2.0,matCrate2);
+crate(0,-14,2.6); crate(2,-13.4,2.0,matCrate2); crate(-3,10,2.2); crate(14,-2,2.4,matCrate2);
+for (const [x,z] of [[-4,2],[9,2],[-14,-2],[4,12]]){
+  const t = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.35, 10, 20), matTire);
+  t.rotation.x = Math.PI/2; t.position.set(x, 0.36, z); t.castShadow = true; scene.add(t);
+  const t2 = t.clone(); t2.position.y = 1.05; scene.add(t2);
+}
+
+/* ---------------- Character builder ---------------- */
+const matSkin = new THREE.MeshStandardMaterial({ color:0xe8b98a, roughness:0.7 });
+function makeHumanoid(shirt, pants, skin){
+  const g = new THREE.Group();
+  const mS = new THREE.MeshStandardMaterial({ color:shirt, roughness:0.8 });
+  const mP = new THREE.MeshStandardMaterial({ color:pants, roughness:0.85 });
+  const mK = new THREE.MeshStandardMaterial({ color:skin||0xe8b98a, roughness:0.7 });
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(0.32, 0.55, 4, 10) : new THREE.CylinderGeometry(0.32,0.32,0.9,10), mS);
+  torso.position.y = 1.25; torso.castShadow = true; g.add(torso);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 12), mK);
+  head.position.y = 1.98; head.castShadow = true; g.add(head);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.26, 0.12, 12), new THREE.MeshStandardMaterial({ color:0x222831 }));
+  cap.position.y = 2.12; g.add(cap);
+  const brim = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.04, 0.28), new THREE.MeshStandardMaterial({ color:0x222831 }));
+  brim.position.set(0, 2.08, 0.3); g.add(brim);
+  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.2), new THREE.MeshStandardMaterial({ color:0x37424f }));
+  pack.position.set(0, 1.35, -0.32); pack.castShadow = true; g.add(pack);
+  function limb(r, len, mat){
+    const p = new THREE.Group();
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r*0.85, len, 8), mat);
+    m.position.y = -len/2; m.castShadow = true; p.add(m);
+    return p;
+  }
+  const armL = limb(0.11, 0.62, mS); armL.position.set(-0.44, 1.62, 0); g.add(armL);
+  const armR = limb(0.11, 0.62, mS); armR.position.set( 0.44, 1.62, 0); g.add(armR);
+  const legL = limb(0.14, 0.85, mP); legL.position.set(-0.18, 0.9, 0); g.add(legL);
+  const legR = limb(0.14, 0.85, mP); legR.position.set( 0.18, 0.9, 0); g.add(legR);
+  return { group:g, head, torso, armL, armR, legL, legR };
+}
+
+/* Player */
+const player = makeHumanoid(0x3f8cff, 0x2d3748);
+player.group.position.set(0, 0, 8);
+scene.add(player.group);
+let gunMesh = null;
+function buildGun(color){
+  if (gunMesh) player.group.remove(gunMesh);
+  gunMesh = new THREE.Group();
+  const m = new THREE.MeshStandardMaterial({ color:color||0x22262c, roughness:0.4, metalness:0.6 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.14, 0.55), m); gunMesh.add(body);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3, 8), m);
+  barrel.rotation.x = Math.PI/2; barrel.position.set(0, 0.03, -0.4); gunMesh.add(barrel);
+  const mag = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.18, 0.1), m); mag.position.set(0, -0.14, 0.05); gunMesh.add(mag);
+  const stock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.22), m); stock.position.set(0, -0.02, 0.36); gunMesh.add(stock);
+  gunMesh.position.set(0.3, 1.35, -0.25);
+  player.group.add(gunMesh);
+}
+
+/* ---------------- Enemies ---------------- */
 const LEVELS = {
-  beginner: { speed:35, headR:13, bodyR:26, hp:100, hint:'full',   spreadMul:0.6, count:4, label:'BEGINNER' },
-  advanced: { speed:75, headR:9,  bodyR:24, hp:130, hint:'brief',  spreadMul:1.0, count:5, label:'ADVANCED' },
-  pro:      { speed:125,headR:6,  bodyR:22, hp:170, hint:'none',   spreadMul:1.6, count:6, label:'PRO' },
+  beginner: { speed:1.6, headR:0.26, bodyR:0.55, hp:100, hint:'full',  spreadMul:0.6, count:4 },
+  advanced: { speed:2.8, headR:0.2,  bodyR:0.5,  hp:140, hint:'brief', spreadMul:1.0, count:5 },
+  pro:      { speed:4.2, headR:0.15, bodyR:0.45, hp:190, hint:'none',  spreadMul:1.6, count:6 },
 };
-
-/* ---------------- State ---------------- */
-let cash = +(localStorage.getItem('fft_cash') ?? 500);
-let owned = JSON.parse(localStorage.getItem('fft_owned') ?? '["ump"]');
-let weapon = WEAPONS.find(w=>w.id===(localStorage.getItem('fft_wpn')??'ump'));
-let level = 'beginner';
-let targetMode = 'head';
-let sens = JSON.parse(localStorage.getItem('fft_sens') ?? '{"gen":100,"red":100,"s2":90,"s4":80,"awm":60}');
-let hud = JSON.parse(localStorage.getItem('fft_hud') ?? '{"size":100,"op":90,"x":0,"y":0}'); // x,y = offsets from bottom-right anchor
-let playerHP = 100;
-
-/* Player = fixed center-lower anchor like FF camera */
-const player = { x:()=>W*0.5, y:()=>H*0.62 };
-
-/* Crosshair */
-let aim = { x: W*0.5, y: H*0.4 };
-
-/* Enemies */
 let enemies = [];
+const rayTargets = [];
 function spawnEnemy(){
   const L = LEVELS[level];
-  const side = Math.random();
-  let x, y;
-  if (side < 0.5){ x = Math.random()*W; y = -40; } else { x = Math.random()<.5?-40:W+40; y = Math.random()*H*0.5; }
-  enemies.push({
-    x, y, hp:L.hp, maxHp:L.hp,
-    dir: Math.random()*Math.PI*2,
-    t: Math.random()*100,
-    strafe: 0.6 + Math.random()*0.8,
-    dead:0, hitFlash:0
-  });
+  const x = (Math.random()-0.5) * (RM.w-8);
+  const z = -RM.d/2 + 4 + Math.random() * (RM.d*0.5);
+  const c = makeHumanoid(0xc0392b, 0x30231f, 0xf1c27d);
+  c.group.position.set(x, 0, z);
+  c.head.scale.setScalar(L.headR / 0.24);
+  c.group.traverse(o => { if (o.isMesh){ o.castShadow = true; } });
+  c.group.userData = { enemy:true };
+  c.head.userData = { part:'head' };
+  c.torso.userData = { part:'body' };
+  rayTargets.push(c.head, c.torso);
+  scene.add(c.group);
+  enemies.push({ c, hp:L.hp, maxHp:L.hp, t:Math.random()*10, phase:Math.random()*Math.PI*2, dead:0, hitFlash:0, baseX:x, baseZ:z });
 }
-function fillEnemies(){ enemies = []; for(let i=0;i<LEVELS[level].count;i++) spawnEnemy(); }
-fillEnemies();
+function fillEnemies(){
+  for (const e of enemies) scene.remove(e.c.group);
+  enemies = []; rayTargets.length = 0;
+  for (let i=0;i<LEVELS[level].count;i++) spawnEnemy();
+}
 
-/* Tracers / floaters */
-let tracers = [], floaters = [];
+/* ---------------- Game state ---------------- */
+const WEAPONS = [
+  { id:'ump',  name:'UMP',    price:0,    dmg:22, rpm:600, spread:1.8, mag:30, color:0x39424e, auto:true },
+  { id:'mp5',  name:'MP5',    price:600,  dmg:20, rpm:780, spread:2.2, mag:32, color:0x4e4439, auto:true },
+  { id:'p90',  name:'P90',    price:900,  dmg:19, rpm:900, spread:2.8, mag:50, color:0x5a3d6e, auto:true },
+  { id:'ak',   name:'AK',     price:1200, dmg:34, rpm:550, spread:1.5, mag:30, color:0x6e3d3d, auto:true },
+  { id:'m4',   name:'M4A1',   price:1100, dmg:28, rpm:660, spread:1.1, mag:30, color:0x3d6e4d, auto:true },
+  { id:'awm',  name:'AWM',    price:2500, dmg:95, rpm:45,  spread:0.1, mag:5,  color:0x8a7a2e, auto:false },
+  { id:'deagle',name:'DESERT EAGLE', price:800, dmg:48, rpm:220, spread:1.0, mag:7, color:0x6e663d, auto:false },
+  { id:'thompson',name:'THOMPSON', price:1500, dmg:26, rpm:700, spread:1.9, mag:40, color:0x6e4d2e, auto:true },
+];
+let cash = +(localStorage.getItem('fft3_cash') ?? 500);
+let owned = JSON.parse(localStorage.getItem('fft3_owned') ?? '["ump"]');
+let weapon = WEAPONS.find(w=>w.id===(localStorage.getItem('fft3_wpn')??'ump'));
+let level = 'beginner';
+let targetMode = 'head';
+let sens = JSON.parse(localStorage.getItem('fft3_sens') ?? '{"gen":100,"red":100,"s2":90,"s4":80,"awm":60}');
+let hud = JSON.parse(localStorage.getItem('fft3_hud') ?? '{"fire":110,"op":92,"joy":120,"fx":0,"fy":0}');
+let ammo = weapon.mag, reloading = 0, lastShot = 0;
+let firing = false, crouched = false;
+let camYaw = Math.PI, camPitch = -0.12; // camera behind player looking forward
+let walkCycle = 0, moving = false;
+buildGun(weapon.color);
 
-/* ---------------- Input ---------------- */
-let firing = false, lastShot = 0, reloading = 0;
+/* ---------------- Controls: joystick + look ---------------- */
+const joy = { active:false, id:null, x:0, y:0 };
+const joyBase = document.getElementById('joyBase'), joyKnob = document.getElementById('joyKnob');
+let lookId = null, lookLast = null;
+const cvEl = renderer.domElement;
+
+cvEl.addEventListener('touchstart', e => {
+  for (const t of e.changedTouches){
+    if (t.clientX < innerWidth*0.45 && !joy.active){
+      joy.active = true; joy.id = t.identifier;
+      joy.bx = t.clientX; joy.by = t.clientY;
+      joyBase.style.display = joyKnob.style.display = 'block';
+      joyBase.style.left = (t.clientX-60)+'px'; joyBase.style.top = (t.clientY-60)+'px';
+      joyKnob.style.left = (t.clientX-26)+'px'; joyKnob.style.top = (t.clientY-26)+'px';
+    } else if (lookId === null){
+      lookId = t.identifier; lookLast = { x:t.clientX, y:t.clientY };
+    }
+  }
+}, { passive:false });
+cvEl.addEventListener('touchmove', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches){
+    if (joy.active && t.identifier === joy.id){
+      let dx = t.clientX - joy.bx, dy = t.clientY - joy.by;
+      const d = Math.hypot(dx,dy), max = hud.joy*0.45;
+      if (d > max){ dx = dx/d*max; dy = dy/d*max; }
+      joy.x = dx/max; joy.y = dy/max;
+      joyKnob.style.left = (joy.bx+dx-26)+'px'; joyKnob.style.top = (joy.by+dy-26)+'px';
+    } else if (t.identifier === lookId && lookLast){
+      const k = 0.0042 * (sens.gen/100);
+      camYaw   -= (t.clientX - lookLast.x) * k;
+      camPitch -= (t.clientY - lookLast.y) * k;
+      camPitch = Math.max(-1.1, Math.min(0.5, camPitch));
+      lookLast = { x:t.clientX, y:t.clientY };
+    }
+  }
+}, { passive:false });
+function touchEnd(e){
+  for (const t of e.changedTouches){
+    if (t.identifier === joy.id){ joy.active = false; joy.id = null; joy.x = joy.y = 0;
+      joyBase.style.display = joyKnob.style.display = 'none'; }
+    if (t.identifier === lookId){ lookId = null; lookLast = null; }
+  }
+}
+cvEl.addEventListener('touchend', touchEnd); cvEl.addEventListener('touchcancel', touchEnd);
+
+/* Desktop: pointer-lock mouse look + WASD */
+const keys = {};
+addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if (e.key.toLowerCase()==='r') startReload(); });
+addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+cvEl.addEventListener('click', () => { if (!isTouch) cvEl.requestPointerLock?.(); });
 addEventListener('mousemove', e => {
-  const k = (sens.gen/100) * (weapon.id==='awm'? sens.awm/100 : 1);
-  aim.x += (e.movementX||0) * k; aim.y += (e.movementY||0) * k;
-  aim.x = Math.max(10, Math.min(W-10, aim.x)); aim.y = Math.max(10, Math.min(H-10, aim.y));
+  if (document.pointerLockElement === cvEl){
+    const k = 0.0022 * (sens.gen/100);
+    camYaw -= e.movementX * k;
+    camPitch = Math.max(-1.1, Math.min(0.5, camPitch - e.movementY * k));
+  }
 });
-addEventListener('mousedown', e => { if (e.target === cv) firing = true; });
-addEventListener('mouseup', () => firing = false);
-addEventListener('keydown', e => { if (e.key==='r'||e.key==='R') reload(); });
 
 /* Fire button */
 const fb = document.getElementById('fireBtn');
-let fbDrag = null;
+let fbDrag = null, hudEdit = true;
+document.getElementById('btnLock').onclick = () => {
+  hudEdit = !hudEdit;
+  document.getElementById('btnLock').textContent = hudEdit ? '🔓' : '🔒';
+  toast(hudEdit ? 'HUD edit ON — drag buttons' : 'HUD locked');
+};
 function placeFB(){
-  const s = hud.size;
-  const ax = W - 30 - s - (hud.x||0), ay = H - 30 - s - (hud.y||0);
+  const s = hud.fire;
+  const ax = innerWidth - 30 - s - (hud.fx||0), ay = innerHeight - 30 - s - (hud.fy||0);
   fb.style.width = fb.style.height = s+'px';
   fb.style.left = ax+'px'; fb.style.top = ay+'px';
-  fb.style.opacity = (hud.op??90)/100;
+  fb.style.opacity = hud.op/100;
 }
-placeFB();
-fb.addEventListener('pointerdown', e => { firing = true; fb.setPointerCapture(e.pointerId); fbDrag = { id:e.pointerId, moved:false }; });
-fb.addEventListener('pointermove', e => {
-  if (!fbDrag || fbDrag.id!==e.pointerId) return;
-  fbDrag.moved = true;
-  hud.x = Math.max(-120, Math.min(W*0.7, W - 30 - hud.size - e.clientX));
-  hud.y = Math.max(-120, Math.min(H*0.7, H - 30 - hud.size - e.clientY));
-  placeFB(); hudAnalyze();
+fb.addEventListener('pointerdown', e => {
+  if (hudEdit && e.shiftKey){ fbDrag = { id:e.pointerId }; fb.setPointerCapture(e.pointerId); return; }
+  if (hudEdit && isTouch && e.pointerType === 'mouse'){ fbDrag = { id:e.pointerId }; fb.setPointerCapture(e.pointerId); return; }
+  firing = true;
 });
-fb.addEventListener('pointerup', () => { firing = false; fbDrag = null; saveHUD(); });
+fb.addEventListener('pointermove', e => {
+  if (!fbDrag) return;
+  hud.fx = Math.max(-140, Math.min(innerWidth*0.75, innerWidth - 30 - hud.fire - e.clientX));
+  hud.fy = Math.max(-140, Math.min(innerHeight*0.75, innerHeight - 30 - hud.fire - e.clientY));
+  placeFB();
+});
+fb.addEventListener('pointerup', () => { firing = false; if (fbDrag){ fbDrag = null; saveHUD(); hudAnalyze(); } });
+document.getElementById('btnJump').addEventListener('pointerdown', () => { vy = 5.2; });
+document.getElementById('btnReload').addEventListener('pointerdown', startReload);
+document.getElementById('btnCrouch').addEventListener('pointerdown', () => { crouched = !crouched; toast(crouched?'Crouched':'Standing'); });
+addEventListener('keydown', e => { if (e.code==='Space') vy = 5.2; });
 
-function reload(){ reloading = 0.9; toast('⟳ Reloading...'); }
+function startReload(){ if (reloading<=0 && ammo < weapon.mag){ reloading = 1.4; toast('⟳ Reloading...'); } }
 
 /* ---------------- Shooting ---------------- */
+const raycaster = new THREE.Raycaster();
+const tracers3d = [];
 function shoot(now){
   if (reloading > 0) return;
+  if (ammo <= 0){ startReload(); return; }
   const interval = 60000 / weapon.rpm;
   if (now - lastShot < interval) return;
-  lastShot = now;
+  lastShot = now; ammo--;
+  document.getElementById('ammo').textContent = ammo + '/' + weapon.mag;
   const L = LEVELS[level];
-  const shots = weapon.id==='awm'||weapon.id==='desert' ? 1 : (weapon.auto?1:1);
-  for (let i=0;i<shots;i++){
-    const ang = Math.atan2(aim.y - player.y(), aim.x - player.x())
-      + (Math.random()-0.5) * weapon.spread * L.spreadMul * Math.PI/180;
-    fireRay(ang, now);
-  }
-  playerHP = Math.max(0, playerHP - 0); // player doesn't take damage in training
-}
-
-function fireRay(ang, now){
-  const px = player.x(), py = player.y();
-  const dx = Math.cos(ang), dy = Math.sin(ang);
-  let best = null, bestT = 1e9, bestPart = null;
-  for (const e of enemies){
-    if (e.dead > 0) continue;
-    const L = LEVELS[level];
-    // head = offset from body center
-    const hx = e.x + Math.cos(e.dir)*L.bodyR*0.9, hy = e.y + Math.sin(e.dir)*L.bodyR*0.9 - L.bodyR*0.4;
-    for (const [part, cxx, cyy, r, mult] of [['head',hx,hy,L.headR,2.0],['body',e.x,e.y,L.bodyR,1.0]]){
-      const t = rayCircle(px,py,dx,dy,cxx,cyy,r);
-      if (t !== null && t < bestT){
-        // body circle contains head — if head test passed at earlier/smaller t prefer head
-        if (part==='body' && best && bestPart==='head' && best.t <= t) continue;
-        best = { e, t }; bestT = t; bestPart = part;
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  const spread = weapon.spread * L.spreadMul * Math.PI/180;
+  dir.x += (Math.random()-0.5)*spread; dir.y += (Math.random()-0.5)*spread; dir.z += (Math.random()-0.5)*spread;
+  dir.normalize();
+  raycaster.set(camera.position, dir);
+  raycaster.far = 120;
+  const hits = raycaster.intersectObjects(rayTargets, false);
+  let end = camera.position.clone().add(dir.multiplyScalar(60));
+  if (hits.length){
+    const h = hits[0];
+    end = h.point;
+    const enemy = enemies.find(e => e.c.head === h.object || e.c.torso === h.object);
+    if (enemy && enemy.dead <= 0){
+      const part = h.object.userData.part;
+      // headshot priority: if body hit but head is closer to crosshair ray, count head
+      const headshot = part === 'head';
+      const dmg = Math.round(weapon.dmg * (headshot ? 2 : 1));
+      enemy.hp -= dmg; enemy.hitFlash = 1;
+      cash += headshot ? 50 : 20; updateCash();
+      hitmarker(headshot);
+      if (enemy.hp <= 0){
+        enemy.dead = 0.001; cash += headshot ? 100 : 50; updateCash();
+        setTimeout(() => { if (enemies.includes(enemy)) respawn(enemy); }, 900);
       }
     }
   }
-  const endT = best ? bestT : Math.max(W,H);
-  tracers.push({ x1:px, y1:py, x2:px+dx*endT, y2:py+dy*endT, life:1 });
-  if (best){
-    const e = best.e;
-    const headshot = bestPart==='head';
-    const dmg = Math.round(weapon.dmg * (headshot?2.0:1.0));
-    e.hp -= dmg; e.hitFlash = 1;
-    floaters.push({ x:e.x, y:e.y-34, txt:(headshot?'HEADSHOT -':'-')+dmg, col: headshot?'#ffd54f':'#ff8a8a', life:1 });
-    if (headshot){ cash += 50; } else cash += 20;
-    if (e.hp <= 0){
-      e.dead = 1; cash += headshot?100:50;
-      floaters.push({ x:e.x, y:e.y, txt:'💀 +$'+(headshot?100:50), col:'#37ff8b', life:1.4 });
-      setTimeout(spawnEnemy, 700);
-    }
-    updateCash();
-  }
+  // tracer
+  const mzl = new THREE.Vector3(); gunMesh.getWorldPosition(mzl);
+  const geo = new THREE.BufferGeometry().setFromPoints([mzl, end]);
+  const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color:0xffd54f, transparent:true, opacity:0.9 }));
+  scene.add(line); tracers3d.push({ line, life:1 });
+  if (!weapon.auto) firing = false;
 }
-function rayCircle(px,py,dx,dy,cx2,cy2,r){
-  const fx = px-cx2, fy = py-cy2;
-  const b = fx*dx+fy*dy, c = fx*fx+fy*fy-r*r;
-  if (c > 0 && b > 0) return null;
-  const disc = b*b - c;
-  if (disc < 0) return null;
-  const t = -b - Math.sqrt(disc);
-  return t < 0 ? 0 : t;
+function respawn(enemy){
+  const L = LEVELS[level];
+  enemy.hp = L.hp; enemy.maxHp = L.hp; enemy.dead = 0;
+  enemy.baseX = (Math.random()-0.5)*(RM.w-8);
+  enemy.baseZ = -RM.d/2 + 4 + Math.random()*(RM.d*0.5);
+  enemy.c.group.position.set(enemy.baseX, 0, enemy.baseZ);
+}
+function hitmarker(head){
+  const el = document.getElementById('hitmark');
+  el.style.color = head ? '#ffd54f' : '#ff8a8a';
+  el.style.opacity = 1; el.style.transform = 'scale(1.3)';
+  setTimeout(() => { el.style.opacity = 0; el.style.transform = 'scale(1)'; }, 90);
 }
 
 /* ---------------- AI coach ---------------- */
+const V3 = new THREE.Vector3();
+function toScreen(v3){
+  V3.copy(v3).project(camera);
+  return { x:(V3.x*0.5+0.5)*innerWidth, y:(-V3.y*0.5+0.5)*innerHeight, behind: V3.z > 1 };
+}
 function nearestEnemy(){
   let best=null, bd=1e9;
-  for (const e of enemies){ if (e.dead>0) continue;
-    const d = Math.hypot(e.x-player.x(), e.y-player.y());
-    if (d<bd){ bd=d; best=e; } }
-  return best ? { e:best, d:bd } : null;
-}
-function coachUpdate(now){
-  const c = document.getElementById('coach');
-  const L = LEVELS[level];
-  if (L.hint === 'none'){ c.style.display='none'; return; }
-  const n = nearestEnemy();
-  if (!n){ c.style.display='none'; return; }
-  const { e, d } = n;
-  const distM = Math.round(d / 12); // fake meters
-  // predicted head position (lead the strafe)
-  const lead = Math.min(40, d*0.06) * (LEVELS[level].speed/35);
-  const hx = e.x + Math.cos(e.dir)*LEVELS[level].bodyR*0.9 + Math.cos(e.dir)*lead*0.4;
-  const hy = e.y + Math.sin(e.dir)*LEVELS[level].bodyR*0.9 - LEVELS[level].bodyR*0.4 + Math.sin(e.dir)*lead*0.4;
-
-  c.style.display='block';
-  const fbr = fb.getBoundingClientRect();
-  const fbx = fbr.left + fbr.width/2, fby = fbr.top + fbr.height/2;
-  const vx = hx - fbx, vy = hy - fby;
-  if (L.hint === 'full'){
-    const dirH = vx>8?'RIGHT':vx<-8?'LEFT':'·';
-    const dirV = vy>8?'DOWN':vy<-8?'UP':'·';
-    c.innerHTML = `<span class="tag">🤖 AI COACH</span><br>Enemy at <b>${distM}m</b> — ${targetMode.toUpperCase()} shot<br>`+
-      `Drag <b>${Math.round(Math.abs(vx))}px ${dirH}</b>, <b>${Math.round(Math.abs(vy))}px ${dirV}</b> from FIRE button<br>`+
-      `<span style="color:#7f8ba0">Sens ${sens.gen} · ${weapon.name} · follow the green line</span>`;
-    c.style.left = Math.min(W-300, fbr.left - 300)+'px';
-    c.style.top = Math.max(56, fbr.top - 130)+'px';
-  } else {
-    c.style.display='none';
-  }
-  // guide line from fire button to predicted head
-  if (L.hint==='full' || (L.hint==='brief' && firing)){
-    cx.save();
-    cx.strokeStyle = 'rgba(55,255,139,.85)'; cx.lineWidth=2.5; cx.setLineDash([10,8]);
-    cx.beginPath(); cx.moveTo(fbx, fby); cx.lineTo(hx, hy); cx.stroke();
-    cx.setLineDash([]);
-    cx.fillStyle='#37ff8b'; cx.beginPath(); cx.arc(hx,hy,5,0,7); cx.fill();
-    cx.restore();
-  }
-}
-
-/* ---------------- Loop ---------------- */
-let last = 0;
-function loop(now){
-  const dt = Math.min(0.05, (now-last)/1000); last = now;
-  update(dt, now);
-  draw(now);
-  requestAnimationFrame(loop);
-}
-function update(dt, now){
-  const L = LEVELS[level];
-  for (const e of enemies){
-    if (e.dead > 0){ e.dead += dt; continue; }
-    e.t += dt;
-    e.hitFlash = Math.max(0, e.hitFlash - dt*4);
-    // movement: drift toward mid-screen + strafe
-    const cxT = W*0.5, cyT = H*0.35;
-    const toC = Math.atan2(cyT - e.y, cxT - e.x);
-    let moveA = toC + Math.sin(e.t * e.strafe * 2) * 1.1;
-    // keep inside arena
-    if (e.x < 60) moveA = 0; if (e.x > W-60) moveA = Math.PI;
-    if (e.y < 60) moveA = Math.PI/2; if (e.y > H*0.55) moveA = -Math.PI/2;
-    e.dir = moveA;
-    e.x += Math.cos(moveA) * L.speed * dt;
-    e.y += Math.sin(moveA) * L.speed * dt;
-  }
-  enemies = enemies.filter(e => e.dead < 1.2);
-  tracers.forEach(t => t.life -= dt*6); tracers = tracers.filter(t=>t.life>0);
-  floaters.forEach(f => { f.life -= dt; f.y -= dt*30; }); floaters = floaters.filter(f=>f.life>0);
-  if (reloading > 0) reloading -= dt;
-  if (firing && (weapon.auto || now-lastShot > 60000/weapon.rpm)) shoot(now);
-  coachUpdate(now);
-  const ch = document.getElementById('crosshair');
-  ch.style.left = aim.x+'px'; ch.style.top = aim.y+'px';
-}
-
-function draw(now){
-  // floor
-  const g = cx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#232a36'); g.addColorStop(1,'#161b24');
-  cx.fillStyle = g; cx.fillRect(0,0,W,H);
-  cx.strokeStyle = 'rgba(255,255,255,.045)'; cx.lineWidth=1;
-  for (let x=0;x<W;x+=64){ cx.beginPath(); cx.moveTo(x,0); cx.lineTo(x,H); cx.stroke(); }
-  for (let y=0;y<H;y+=64){ cx.beginPath(); cx.moveTo(0,y); cx.lineTo(W,y); cx.stroke(); }
-  // arena zone
-  cx.strokeStyle = 'rgba(55,255,139,.25)'; cx.lineWidth=2; cx.setLineDash([14,10]);
-  cx.strokeRect(40, 40, W-80, H*0.55); cx.setLineDash([]);
-  cx.fillStyle='rgba(55,255,139,.5)'; cx.font='700 11px Arial';
-  cx.fillText('TRAINING ZONE — ' + LEVELS[level].label, 52, 60);
-
-  // player
-  const px = player.x(), py = player.y();
-  cx.save(); cx.translate(px,py);
-  cx.fillStyle='rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(0,10,16,6,0,0,7); cx.fill();
-  cx.fillStyle='#3f8cff'; cx.beginPath(); cx.arc(0,0,13,0,7); cx.fill();
-  cx.strokeStyle='#fff'; cx.lineWidth=2; cx.stroke();
-  const aa = Math.atan2(aim.y-py, aim.x-px);
-  cx.rotate(aa); cx.fillStyle = weapon.color; cx.fillRect(8,-3,22,6);
-  cx.restore();
-
-  // enemies
-  const L = LEVELS[level];
   for (const e of enemies){
     if (e.dead>0) continue;
-    cx.save(); cx.translate(e.x,e.y);
-    cx.fillStyle='rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(0,12,14,5,0,0,7); cx.fill();
-    cx.rotate(e.dir);
-    cx.fillStyle = e.hitFlash>0 ? '#ff6b6b' : '#c0392b';
-    cx.beginPath(); cx.arc(0,0,L.bodyR,0,7); cx.fill();
-    cx.strokeStyle='#7a1f14'; cx.lineWidth=2; cx.stroke();
-    // head
-    cx.fillStyle = e.hitFlash>0 ? '#ffe08a' : '#f1c27d';
-    cx.beginPath(); cx.arc(L.bodyR*0.9, -L.bodyR*0.4, L.headR, 0, 7); cx.fill();
-    cx.strokeStyle='#8a5a2b'; cx.stroke();
-    cx.restore();
-    // hp bar
-    const bw = 44;
-    cx.fillStyle='rgba(0,0,0,.6)'; cx.fillRect(e.x-bw/2, e.y-L.bodyR-22, bw, 5);
-    cx.fillStyle='#ff5a6a'; cx.fillRect(e.x-bw/2, e.y-L.bodyR-22, bw*Math.max(0,e.hp/e.maxHp), 5);
+    const d = e.c.group.position.distanceTo(player.group.position);
+    if (d<bd){ bd=d; best=e; }
   }
-
-  // tracers
-  for (const t of tracers){
-    cx.strokeStyle = `rgba(255,213,79,${t.life})`; cx.lineWidth=2;
-    cx.beginPath(); cx.moveTo(t.x1,t.y1); cx.lineTo(t.x2,t.y2); cx.stroke();
-  }
-  // floaters
-  cx.font='800 14px Arial'; cx.textAlign='center';
-  for (const f of floaters){
-    cx.globalAlpha = Math.min(1, f.life);
-    cx.fillStyle=f.col; cx.fillText(f.txt, f.x, f.y);
-    cx.globalAlpha = 1;
-  }
-  cx.textAlign='left';
-
-  // reloading indicator
-  if (reloading>0){
-    cx.fillStyle='rgba(0,0,0,.6)'; cx.fillRect(W/2-70, H-70, 140, 26);
-    cx.fillStyle='#ffb300'; cx.font='700 13px Arial'; cx.textAlign='center';
-    cx.fillText('⟳ RELOADING...', W/2, H-52); cx.textAlign='left';
-  }
+  return best ? { e:best, d:bd } : null;
 }
 
-/* ---------------- UI logic ---------------- */
-function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',1800); }
-function updateCash(){ document.getElementById('cash').textContent = cash; localStorage.setItem('fft_cash', cash); }
+/* ---------------- Main loop ---------------- */
+let vy = 0, py = 0, last = 0;
+const clock = new THREE.Clock();
+function loop(){
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.05, clock.getDelta());
+  const now = performance.now();
+
+  /* movement */
+  let mx = 0, mz = 0;
+  if (keys['w']) mz -= 1; if (keys['s']) mz += 1;
+  if (keys['a']) mx -= 1; if (keys['d']) mx += 1;
+  mx += joy.x; mz += joy.y;
+  const mlen = Math.hypot(mx, mz);
+  moving = mlen > 0.15;
+  if (mlen > 1){ mx/=mlen; mz/=mlen; }
+  const speed = crouched ? 2.2 : 4.6;
+  const sin = Math.sin(camYaw), cos = Math.cos(camYaw);
+  const wx = (mx*cos - mz*sin) * speed * dt;
+  const wz = (mx*sin + mz*cos) * speed * dt;
+  player.group.position.x = Math.max(-RM.w/2+1.2, Math.min(RM.w/2-1.2, player.group.position.x + wx));
+  player.group.position.z = Math.max(-RM.d/2+1.2, Math.min(RM.d/2-1.2, player.group.position.z + wz));
+  player.group.rotation.y = camYaw;
+
+  /* jump / gravity */
+  if (vy !== 0 || py > 0){ vy -= 14*dt; py = Math.max(0, py + vy*dt); if (py===0) vy=0; }
+  player.group.position.y = py;
+
+  /* walk animation */
+  if (moving){ walkCycle += dt * (crouched?7:11); }
+  const sw = moving ? Math.sin(walkCycle)*0.55 : 0;
+  player.legL.rotation.x = sw; player.legR.rotation.x = -sw;
+  player.armL.rotation.x = -sw*0.7;
+  player.armR.rotation.x = -1.15; // aim pose
+  if (gunMesh) gunMesh.rotation.x = -camPitch*0.8;
+
+  /* camera: third person */
+  const cd = 3.6, ch = crouched ? 1.7 : 2.05;
+  const cx2 = player.group.position.x + Math.sin(camYaw)*cd*Math.cos(camPitch);
+  const cz2 = player.group.position.z + Math.cos(camYaw)*cd*Math.cos(camPitch);
+  const cy2 = player.group.position.y + ch - Math.sin(camPitch)*cd;
+  camera.position.lerp(new THREE.Vector3(cx2, cy2, cz2), 0.35);
+  camera.lookAt(player.group.position.x, player.group.position.y + 1.5, player.group.position.z);
+
+  /* enemies */
+  const L = LEVELS[level];
+  for (const e of enemies){
+    if (e.dead > 0){
+      e.dead += dt;
+      e.c.group.rotation.x = Math.min(Math.PI/2, e.dead*4);
+      e.c.group.position.y = -e.dead*0.6;
+      continue;
+    }
+    e.t += dt;
+    e.hitFlash = Math.max(0, e.hitFlash - dt*4);
+    const flash = e.hitFlash > 0 ? e.hitFlash : 0;
+    e.c.torso.material.emissive = new THREE.Color(flash*0.9, flash*0.1, flash*0.1);
+    // strafe around base point
+    const sx = Math.sin(e.t*1.3 + e.phase) * 3.2;
+    const sz = Math.cos(e.t*0.9 + e.phase) * 2.0;
+    let ex = e.baseX + sx, ez = e.baseZ + sz;
+    ex = Math.max(-RM.w/2+2, Math.min(RM.w/2-2, ex));
+    ez = Math.max(-RM.d/2+2, Math.min(RM.d/2-8, ez));
+    const dx = ex - e.c.group.position.x, dz = ez - e.c.group.position.z;
+    e.c.group.position.x += dx * Math.min(1, L.speed*dt*2);
+    e.c.group.position.z += dz * Math.min(1, L.speed*dt*2);
+    // face player
+    e.c.group.rotation.y = Math.atan2(player.group.position.x - e.c.group.position.x, player.group.position.z - e.c.group.position.z);
+    // walk anim
+    const wc = e.t * 8;
+    e.c.legL.rotation.x = Math.sin(wc)*0.5; e.c.legR.rotation.x = -Math.sin(wc)*0.5;
+    e.c.armL.rotation.x = -Math.sin(wc)*0.4; e.c.armR.rotation.x = Math.sin(wc)*0.4;
+  }
+
+  /* shooting */
+  if (firing && (weapon.auto || now-lastShot > 60000/weapon.rpm)) shoot(now);
+  if (reloading > 0){ reloading -= dt; if (reloading <= 0){ ammo = weapon.mag; document.getElementById('ammo').textContent = ammo+'/'+weapon.mag; toast('✔ Reloaded'); } }
+
+  /* tracers fade */
+  for (const t of tracers3d){ t.life -= dt*7; t.line.material.opacity = Math.max(0, t.life); }
+  while (tracers3d.length && tracers3d[0].life <= 0){ scene.remove(tracers3d[0].line); tracers3d.shift(); }
+
+  renderer.render(scene, camera);
+  drawOverlay(now);
+}
+requestAnimationFrame(loop);
+
+/* ---------------- 2D overlay: HP bars + AI lines ---------------- */
+function drawOverlay(now){
+  ctx2.clearRect(0,0,c2.width,c2.height);
+  const L = LEVELS[level];
+
+  /* enemy HP bars (screen space) */
+  for (const e of enemies){
+    if (e.dead > 0) continue;
+    V3.set(e.c.group.position.x, e.c.group.position.y + 2.45, e.c.group.position.z).project(camera);
+    if (V3.z > 1) continue;
+    const sx = (V3.x*0.5+0.5)*innerWidth, sy = (-V3.y*0.5+0.5)*innerHeight;
+    const bw = 46;
+    ctx2.fillStyle = 'rgba(0,0,0,.6)'; ctx2.fillRect(sx-bw/2, sy, bw, 5);
+    ctx2.fillStyle = '#ff5a6a'; ctx2.fillRect(sx-bw/2, sy, bw*Math.max(0,e.hp/e.maxHp), 5);
+  }
+
+  /* AI coach */
+  const coach = document.getElementById('coach');
+  if (L.hint === 'none'){ coach.style.display='none'; return; }
+  const n = nearestEnemy();
+  if (!n){ coach.style.display='none'; return; }
+  const { e, d } = n;
+  const hp = e.c.head.getWorldPosition(new THREE.Vector3());
+  const sp = toScreen(hp);
+  if (sp.behind){ coach.style.display='none'; return; }
+
+  const fbr = fb.getBoundingClientRect();
+  const fbx = fbr.left + fbr.width/2, fby = fbr.top + fbr.height/2;
+  const distM = Math.round(d * 2.2);
+
+  if (L.hint === 'full' || (L.hint === 'brief' && firing)){
+    ctx2.save();
+    ctx2.strokeStyle = 'rgba(55,255,139,.9)'; ctx2.lineWidth = 3; ctx2.setLineDash([12,9]);
+    ctx2.beginPath(); ctx2.moveTo(fbx, fby); ctx2.lineTo(sp.x, sp.y); ctx2.stroke();
+    ctx2.setLineDash([]);
+    ctx2.fillStyle = '#37ff8b';
+    ctx2.beginPath(); ctx2.arc(sp.x, sp.y, 7, 0, 7); ctx2.fill();
+    ctx2.strokeStyle = '#fff'; ctx2.lineWidth = 2; ctx2.stroke();
+    ctx2.restore();
+  }
+  if (L.hint === 'full'){
+    const vx = sp.x - fbx, vy2 = sp.y - fby;
+    const dirH = vx>10?'RIGHT':vx<-10?'LEFT':'·';
+    const dirV = vy2>10?'DOWN':vy2<-10?'UP':'·';
+    coach.style.display = 'block';
+    coach.innerHTML = `<span class="tag">🤖 AI COACH</span><br>Enemy at <b>${distM}m</b> — ${targetMode.toUpperCase()}<br>`+
+      `Drag <b>${Math.round(Math.abs(vx))}px ${dirH}</b>, <b>${Math.round(Math.abs(vy2))}px ${dirV}</b> from FIRE<br>`+
+      `<span style="color:#7f8ba0">Sens ${sens.gen} · ${weapon.name}</span>`;
+    coach.style.left = Math.max(8, Math.min(innerWidth-286, fbr.left - 296))+'px';
+    coach.style.top = Math.max(56, fbr.top - 120)+'px';
+  } else coach.style.display = 'none';
+}
+
+/* ---------------- UI ---------------- */
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',1800); }
+function updateCash(){ document.getElementById('cash').textContent = cash; localStorage.setItem('fft3_cash', cash); }
 function openPanel(id){ document.getElementById(id).classList.add('open'); if(id==='shopPanel') renderShop(); if(id==='hudPanel') hudAnalyze(); }
 function closePanels(){ document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open')); }
-function setLevel(l){ level=l; fillEnemies(); toast('Level: '+LEVELS[l].label); }
-function setTargetMode(m){ targetMode=m;
+function setLevel(l){ level = l; fillEnemies(); toast('Level: ' + l.toUpperCase()); }
+function setTargetMode(m){ targetMode = m;
   document.getElementById('tgHead').classList.toggle('on', m==='head');
   document.getElementById('tgBody').classList.toggle('on', m==='body');
 }
 
-/* ---------- Shop ---------- */
+/* Shop */
 function renderShop(){
-  const g = document.getElementById('wgrid'); g.innerHTML='';
+  const g = document.getElementById('wgrid'); g.innerHTML = '';
   for (const w of WEAPONS){
-    const isOwned = owned.includes(w.id), isEq = weapon.id===w.id;
+    const isOwned = owned.includes(w.id), isEq = weapon.id === w.id;
     const div = document.createElement('div');
-    div.className = 'wcard' + (isEq?' equipped':'') + (!isOwned?' locked':'');
-    div.innerHTML = `<div class="wn" style="color:${w.color}">${w.name}</div>
-      <div class="ws">DMG ${w.dmg} · RPM ${w.rpm}<br>SPREAD ${w.spread}° · ${w.auto?'AUTO':'SEMI'}</div>
-      <div class="wp">${isEq?'✔ EQUIPPED':isOwned?'EQUIP':'💰 $'+w.price}</div>`;
+    div.className = 'wcard' + (isEq ? ' equipped' : '');
+    div.innerHTML = `<div class="wn">${w.name}</div>
+      <div class="ws">DMG ${w.dmg} · RPM ${w.rpm}<br>MAG ${w.mag} · ${w.auto?'AUTO':'SEMI'}</div>
+      <div class="wp">${isEq ? '✔ EQUIPPED' : isOwned ? 'EQUIP' : '💰 $' + w.price}</div>`;
     div.onclick = () => {
       if (isEq) return;
       if (isOwned){ equip(w); return; }
-      if (cash >= w.price){ cash -= w.price; owned.push(w.id); updateCash(); equip(w); renderShop(); toast('Purchased '+w.name+'!'); saveOwned(); }
-      else toast('Not enough cash! Hit some headshots 💰');
+      if (cash >= w.price){ cash -= w.price; owned.push(w.id); updateCash(); equip(w); renderShop(); toast('Purchased ' + w.name + '!'); saveOwned(); }
+      else toast('Not enough cash!');
     };
     g.appendChild(div);
   }
 }
-function equip(w){ weapon=w; localStorage.setItem('fft_wpn', w.id); renderShop(); toast('Equipped '+w.name); }
-function saveOwned(){ localStorage.setItem('fft_owned', JSON.stringify(owned)); }
+function equip(w){ weapon = w; ammo = w.mag; buildGun(w.color);
+  document.getElementById('wpnTag').textContent = w.name;
+  document.getElementById('ammo').textContent = ammo + '/' + w.mag;
+  localStorage.setItem('fft3_wpn', w.id); renderShop(); toast('Equipped ' + w.name); }
+function saveOwned(){ localStorage.setItem('fft3_owned', JSON.stringify(owned)); }
 
-/* ---------- HUD ---------- */
-function hudPreview(){
-  hud.size = +document.getElementById('hudSize').value;
+/* HUD */
+function hudApply(){
+  hud.fire = +document.getElementById('hudSize').value;
   hud.op = +document.getElementById('hudOp').value;
-  document.getElementById('hudSizeV').textContent = hud.size;
-  document.getElementById('hudOpV').textContent = hud.op+'%';
-  placeFB(); hudAnalyze();
+  hud.joy = +document.getElementById('hudJoy').value;
+  document.getElementById('hudSizeV').textContent = hud.fire;
+  document.getElementById('hudOpV').textContent = hud.op + '%';
+  document.getElementById('hudJoyV').textContent = hud.joy;
+  placeFB(); saveHUD();
 }
 function hudExport(){
-  const code = btoa(JSON.stringify({ v:1, btn:{ size:hud.size, op:hud.op, x:Math.round(hud.x||0), y:Math.round(hud.y||0) }, sens, wpn:weapon.id }));
+  const code = btoa(JSON.stringify({ v:1, hud, sens, wpn: weapon.id }));
   document.getElementById('hudCode').value = code;
   navigator.clipboard?.writeText(code);
   toast('HUD code copied! 📋');
@@ -523,54 +705,47 @@ function hudImport(){
   if (!code) return toast('Paste a HUD code first');
   try {
     const d = JSON.parse(atob(code));
-    hud = { size:d.btn.size, op:d.btn.op, x:d.btn.x||0, y:d.btn.y||0 };
-    if (d.sens) sens = d.sens;
-    if (d.wpn && WEAPONS.find(w=>w.id===d.wpn)) weapon = WEAPONS.find(w=>w.id===d.wpn);
-    document.getElementById('hudSize').value = hud.size;
+    hud = d.hud; sens = d.sens;
+    if (d.wpn && WEAPONS.find(w => w.id === d.wpn)) weapon = WEAPONS.find(w => w.id === d.wpn);
+    document.getElementById('hudSize').value = hud.fire;
     document.getElementById('hudOp').value = hud.op;
-    hudPreview(); sensWrite(); saveHUD();
+    document.getElementById('hudJoy').value = hud.joy;
+    hudApply(); sensWrite(); equip(weapon);
     toast('HUD loaded! ✅');
   } catch(e){ toast('Invalid HUD code ❌'); }
 }
 function hudRandom(){
-  hud.size = 60 + Math.round(Math.random()*90);
-  hud.x = Math.round(Math.random()*180); hud.y = Math.round(Math.random()*160);
-  hud.op = 70 + Math.round(Math.random()*30);
-  document.getElementById('hudSize').value = hud.size;
+  hud.fire = 70 + Math.round(Math.random()*90);
+  hud.fx = Math.round(Math.random()*220); hud.fy = Math.round(Math.random()*200);
+  hud.op = 75 + Math.round(Math.random()*25);
+  document.getElementById('hudSize').value = hud.fire;
   document.getElementById('hudOp').value = hud.op;
-  hudPreview(); saveHUD();
+  hudApply();
 }
-function saveHUD(){ localStorage.setItem('fft_hud', JSON.stringify(hud)); }
+function saveHUD(){ localStorage.setItem('fft3_hud', JSON.stringify(hud)); }
 function hudAnalyze(){
   const box = document.getElementById('hudAI');
-  const diag = Math.round(Math.hypot(W,H));
-  const sizePct = Math.round(hud.size / (diag*0.09) * 100);
-  let verdict, tip;
-  if (hud.size < 75){ verdict='small & precise'; tip='High control, but harder to hit fast under pressure.'; }
-  else if (hud.size <= 115){ verdict='balanced'; tip='Great all-round size for drag headshots.'; }
-  else { verdict='big & forgiving'; tip='Easy to press, but you will over-drag — lower your sensitivity.'; }
-  const edge = (hud.x||0) < 10 ? 'very close to the screen edge' : 'well inside the safe zone';
+  let v, tip;
+  if (hud.fire < 85){ v = 'small & precise'; tip = 'High control — pair it with higher sensitivity.'; }
+  else if (hud.fire <= 125){ v = 'balanced'; tip = 'Great all-round size for drag headshots.'; }
+  else { v = 'big & forgiving'; tip = 'Easy to press, but you may over-drag — lower your sensitivity.'; }
   box.innerHTML = `<div class="h">🤖 HUD AI ANALYSIS</div>
-    Button is <b>${verdict}</b> (${hud.size}px ≈ ${sizePct}% of ideal). ${tip}<br>
-    Position: ${edge}.<br>
-    Recommended sensitivity for this HUD: <b>${aiSensValue()}%</b> → tap <b>AI: BUILD PERFECT SENSITIVITY</b> in the Sensitivity panel.`;
+    Fire button is <b>${v}</b> (${hud.fire}px). ${tip}<br>
+    Recommended sensitivity for this HUD: <b>${aiSensValue()}%</b> → tap <b>AI: BUILD PERFECT SENSITIVITY</b>.`;
 }
-function aiSensValue(){
-  // smaller button → higher sens (less travel needed); bigger → lower sens
-  return Math.max(40, Math.min(190, Math.round(185 - hud.size*0.95)));
-}
+function aiSensValue(){ return Math.max(40, Math.min(190, Math.round(185 - hud.fire * 0.95))); }
 
-/* ---------- Sensitivity ---------- */
+/* Sensitivity */
 function sensRead(){
   sens.gen = +document.getElementById('sGen').value;
   sens.red = +document.getElementById('sRed').value;
   sens.s2  = +document.getElementById('s2x').value;
   sens.s4  = +document.getElementById('s4x').value;
   sens.awm = +document.getElementById('sAwm').value;
-  ['sGen','sRed','s2x','s4x','sAwm'].forEach((id,i)=>{
+  ['sGen','sRed','s2x','s4x','sAwm'].forEach((id,i) => {
     document.getElementById(id+'V').textContent = [sens.gen,sens.red,sens.s2,sens.s4,sens.awm][i];
   });
-  localStorage.setItem('fft_sens', JSON.stringify(sens));
+  localStorage.setItem('fft3_sens', JSON.stringify(sens));
 }
 function sensWrite(){
   document.getElementById('sGen').value = sens.gen; document.getElementById('sRed').value = sens.red;
@@ -578,27 +753,26 @@ function sensWrite(){
   document.getElementById('sAwm').value = sens.awm; sensRead();
 }
 function aiSens(){
-  const base = aiSensValue();
-  sens.gen = base;
-  sens.red = Math.min(200, base + 10);
-  sens.s2  = Math.max(30, base - 10);
-  sens.s4  = Math.max(30, base - 25);
-  sens.awm = Math.max(20, base - 40);
+  const b = aiSensValue();
+  sens.gen = b; sens.red = Math.min(200, b+10); sens.s2 = Math.max(30, b-10);
+  sens.s4 = Math.max(30, b-25); sens.awm = Math.max(20, b-40);
   sensWrite();
   document.getElementById('sensAI').innerHTML = `<div class="h">🤖 AI SENSITIVITY BUILT</div>
-    Based on your <b>${hud.size}px</b> fire button at its current position, the AI set:<br>
+    Matched to your <b>${hud.fire}px</b> fire button:<br>
     General <b>${sens.gen}</b> · Red Dot <b>${sens.red}</b> · 2x <b>${sens.s2}</b> · 4x <b>${sens.s4}</b> · AWM <b>${sens.awm}</b><br>
-    <span style="color:#7f8ba0">Logic: ${hud.size<75?'small button → faster response sens':'larger button → smoother lower sens'} so your drag stops exactly on the head.</span>`;
+    <span style="color:#7f8ba0">${hud.fire<85?'Small button → faster sens so short drags reach the head.':'Larger button → smoother sens so your drag stops exactly on the head.'}</span>`;
   toast('AI sensitivity applied! 🎯');
 }
 
-/* ---------- init ---------- */
-sensWrite(); hudPreview(); updateCash();
-requestAnimationFrame(loop);
+/* init */
+sensWrite(); hudApply(); updateCash();
+document.getElementById('wpnTag').textContent = weapon.name;
+document.getElementById('ammo').textContent = ammo + '/' + weapon.mag;
+if (!isTouch) toast('Click screen to lock mouse · WASD move · SPACE jump · R reload');
 </script>
 </body>
 </html>
 '''
-with open('/mnt/agents/output/ff_trainer.html', 'w') as f:
+with open('/mnt/agents/output/ff_trainer_3d.html', 'w') as f:
     f.write(code)
-print(len(code), 'bytes written')
+print(len(code), 'bytes')
