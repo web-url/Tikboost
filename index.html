@@ -3,383 +3,298 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TikGrow - Earn Coins, Grow TikTok</title>
+<title>Scar Aim Trainer</title>
+
 <style>
-  *{box-sizing:border-box; margin:0; padding:0; font-family:'Segoe UI', sans-serif;}
-  body{background:#0a0a0a; color:#fff;}
-  header{background:linear-gradient(90deg,#ff0050,#ff4081); padding:16px 20px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:10;}
-  header h1{font-size:20px;}
-  .coins-badge{background:#000; padding:6px 12px; border-radius:20px; font-weight:bold; color:#ffd700;}
-  .container{max-width:900px; margin:20px auto; padding:16px;}
-  .card{background:#111; padding:20px; border-radius:14px; margin-bottom:20px; border:1px solid #222;}
-  h2{color:#ff0050; margin-bottom:12px;}
-  h3{margin:10px 0; color:#ddd;}
-  input{width:100%; padding:12px; border-radius:8px; border:1px solid #333; background:#1a1a1a; color:#fff; margin-bottom:10px;}
-  button{background:#ff0050; color:#fff; border:none; padding:12px 18px; border-radius:8px; cursor:pointer; font-weight:bold; transition:0.2s;}
-  button:hover{background:#e60047;}
-  button.secondary{background:#333;}
-  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px;}
-  .task, .product{background:#1a1a1a; padding:16px; border-radius:10px; display:flex; justify-content:space-between; align-items:center;}
-  .badge{font-size:12px; background:#222; padding:4px 8px; border-radius:6px;}
-  footer{text-align:center; padding:30px; font-size:12px; color:#777;}
-  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#ff0050; padding:12px 20px; border-radius:8px; display:none; z-index:99;}
-  ul{list-style:none; padding-left:0;}
-  ul li{padding:6px 0; border-bottom:1px solid #222;}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #080808;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  overflow: hidden;
+}
+
+header {
+  padding: 15px;
+  background: #111;
+  border-bottom: 1px solid #333;
+}
+
+h1 {
+  color: #00ff88;
+  font-size: 24px;
+}
+
+.stats {
+  display: flex;
+  justify-content: space-around;
+  padding: 12px;
+  background: #151515;
+  font-size: 14px;
+}
+
+.stat span {
+  display: block;
+  color: #00ff88;
+  font-size: 19px;
+  font-weight: bold;
+}
+
+#game {
+  position: relative;
+  height: calc(100vh - 150px);
+  background:
+    linear-gradient(#111 1px, transparent 1px),
+    linear-gradient(90deg, #111 1px, transparent 1px);
+  background-size: 30px 30px;
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+.target {
+  position: absolute;
+  width: 70px;
+  height: 110px;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.head {
+  width: 38px;
+  height: 38px;
+  background: #ff3030;
+  border: 3px solid white;
+  border-radius: 50%;
+  margin: auto;
+}
+
+.body {
+  width: 55px;
+  height: 70px;
+  background: #287cff;
+  border: 3px solid white;
+  border-radius: 20px 20px 8px 8px;
+  margin: 2px auto;
+}
+
+.hit {
+  animation: hit .15s;
+}
+
+@keyframes hit {
+  50% {
+    transform: scale(1.3);
+  }
+}
+
+#message {
+  position: absolute;
+  top: 45%;
+  width: 100%;
+  font-size: 22px;
+  color: #00ff88;
+  pointer-events: none;
+}
+
+.controls {
+  position: fixed;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+}
+
+button, select {
+  background: #00ff88;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: bold;
+  margin: 3px;
+}
+
+button:active {
+  transform: scale(.95);
+}
 </style>
 </head>
+
 <body>
+
 <header>
-  <h1>TikGrow</h1>
-  <div class="coins-badge">Coins: <span id="coins">0</span></div>
+  <h1>⚡ SCAR AIM TRAINER</h1>
 </header>
 
-<div class="container">
+<div class="stats">
+  <div class="stat">Score<span id="score">0</span></div>
+  <div class="stat">Accuracy<span id="accuracy">100%</span></div>
+  <div class="stat">Combo<span id="combo">0</span></div>
+  <div class="stat">Reaction<span id="reaction">0ms</span></div>
+</div>
 
-  <div class="card" id="auth-card">
-    <h2>Get Started</h2>
-    <p>Verify with your TikTok username</p>
-    <input id="username" placeholder="@yourusername">
-    <input id="email" type="email" placeholder="your email">
-    <button onclick="saveUser()">Continue</button>
-  </div>
+<div id="game">
+  <div id="message">Press START</div>
+</div>
 
-  <div id="app" style="display:none;">
-    
-    <div class="card">
-      <h2>Earn Coins</h2>
-      <p>Complete tasks. Coins are added instantly.</p>
-      <div class="grid">
-        <div class="task">
-          <div>
-import 'package:flutter/material.dart';
+<div class="controls">
+  <select id="difficulty">
+    <option value="easy">Easy</option>
+    <option value="medium">Medium</option>
+    <option value="hard">Hard</option>
+  </select>
 
-void main() => runApp(const TikBoostApp());
+  <button onclick="startGame()">START</button>
+  <button onclick="resetGame()">RESET</button>
+</div>
 
-class AppColors {
-  static const bg = Color(0xFF0A0F1E);
-  static const card = Color(0xFF1A233A);
-  static const pink = Color(0xFFFF2D6A);
-  static const blue = Color(0xFF2F8BFF);
-  static const gold = Color(0xFFFFC107);
-  static const gradient = LinearGradient(colors: [pink, blue]);
+<script>
+const game = document.getElementById("game");
+const message = document.getElementById("message");
+
+let score = 0;
+let shots = 0;
+let hits = 0;
+let combo = 0;
+let bestCombo = 0;
+let startTime = 0;
+let playing = false;
+let target;
+
+const speeds = {
+  easy: 1800,
+  medium: 1200,
+  hard: 750
+};
+
+function startGame() {
+  resetGame();
+
+  playing = true;
+  message.style.display = "none";
+
+  spawnTarget();
 }
 
-class TikBoostApp extends StatelessWidget {
-  const TikBoostApp({super.key});
+function resetGame() {
+  playing = false;
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TikBoost',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: AppColors.bg,
-        primaryColor: AppColors.pink,
-        cardColor: AppColors.card,
-        appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent, elevation: 0),
-      ),
-      home: const LoginScreen(),
-    );
-  }
-}
-
-/// SCREEN 1: LOGIN
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            colors: [Color(0xFF2A1A4A), AppColors.bg],
-            center: Alignment.topCenter,
-            radius: 1.2
-          )
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Stack(alignment: Alignment.center, children: [
-              SizedBox(
-                width: 130, height: 130,
-                child: CircularProgressIndicator(strokeWidth: 4, valueColor: AlwaysStoppedAnimation(AppColors.pink.withOpacity(0.5))),
-              ),
-              const CircleAvatar(radius: 42, backgroundColor: Colors.white, child: Icon(Icons.person, size: 55, color: Colors.black)),
-            ]),
-            const SizedBox(height: 20),
-            const Text("TikBoost", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 1)),
-            const Text("Boost profile & videos", style: TextStyle(color: Colors.grey, fontSize: 14)),
-            const SizedBox(height: 30),
-            TextField(
-              decoration: InputDecoration(
-                hintText: "@username",
-                prefixText: "@ ",
-                filled: true,
-                fillColor: AppColors.card,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text("*Enter your username, not your display name. The profile must be public.", 
-              style: TextStyle(fontSize: 12, color: Colors.grey), textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.pink,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))
-                ),
-                onPressed: () {
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainWrapper()));
-                },
-                child: const Text("Continue", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextButton(onPressed: () {}, child: const Text("Cannot find your username?", style: TextStyle(decoration: TextDecoration.underline)))
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// SCREEN 2: MAIN WITH BOTTOM NAV
-class MainWrapper extends StatefulWidget {
-  const MainWrapper({super.key});
-  @override
-  State<MainWrapper> createState() => _MainWrapperState();
-}
-
-class _MainWrapperState extends State<MainWrapper> {
-  int _index = 0;
-  final _screens = [
-    const HomeScreen(),
-    const StoreScreen(),
-    const MoreScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_index],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
-        backgroundColor: AppColors.bg,
-        selectedItemColor: AppColors.pink,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.person_add), label: "Store"),
-          BottomNavigationBarItem(icon: Icon(Icons.more_horiz), label: "More"),
-        ],
-      ),
-    );
-  }
-}
-
-/// SCREEN 3: HOME / BOOST TASKS
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("TikBoost"),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Chip(
-              avatar: CircleAvatar(backgroundColor: AppColors.gold, child: const Icon(Icons.monetization_on, size: 16, color: Colors.black)),
-              label: const Text("39", style: TextStyle(fontWeight: FontWeight.bold)),
-              backgroundColor: AppColors.card,
-            ),
-          )
-        ],
-      ),
-      body: Column(
-        children: [
-          const Expanded(child: Center(child: CircularProgressIndicator(color: AppColors.pink, strokeWidth: 3))),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(children: [
-              Expanded(child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppColors.card),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
-                ),
-                onPressed: () {}, child: const Text("Skip"))),
-              const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(
-                onPressed: () {}, 
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.pink, 
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
-                ), 
-                child: const Text("Start")),
-              ),
-            ]),
-          ),
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(14)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                const Text("Tips", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                IconButton(onPressed: () {}, icon: const Icon(Icons.close, size: 18))
-              ]),
-              const Text("1. Click the button \n2. Open Official App\n3. Give follow/like \n4. Back to TikBoost\n5. Get Coins"),
-              const SizedBox(height: 8),
-              const Text("Unfollow after completing a task may lead to coin loss or order cancellation.", 
-                style: TextStyle(color: AppColors.pink, fontSize: 12))
-            ]),
-          )
-        ],
-      ),
-    );
-  }
-}
-
-/// SCREEN 4: STORE WITH PROFILE / VIDEO TABS
-class StoreScreen extends StatefulWidget {
-  const StoreScreen({super.key});
-  @override
-  State<StoreScreen> createState() => _StoreScreenState();
-}
-
-class _StoreScreenState extends State<StoreScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  final profileItems = [
-    {"qty": "+200", "price": "\$2.99"},
-    {"qty": "+400", "off": "17% OFF", "price": "\$4.99"},
-    {"qty": "+900", "off": "26% OFF", "price": "\$9.99"},
-    {"qty": "+2000", "off": "33% OFF", "price": "\$19.99"},
-    {"qty": "+4300", "off": "38% OFF", "price": "\$39.99"},
-    {"qty": "+9000", "off": "44% OFF", "price": "\$79.99"},
-    {"qty": "+10", "coins": "100"},
-    {"qty": "+30", "coins": "300"},
-  ];
-
-  final videoItems = [
-    {"qty": "+300", "price": "\$2.99"},
-    {"qty": "+600", "off": "17% OFF", "price": "\$4.99"},
-    {"qty": "+1300", "off": "26% OFF", "price": "\$9.99"},
-    {"qty": "+2800", "off": "31% OFF", "price": "\$19.99"},
-    {"qty": "+5800", "off": "35% OFF", "price": "\$39.99"},
-    {"qty": "+12000", "off": "40% OFF", "price": "\$79.99"},
-    {"qty": "+10", "coins": "80"},
-    {"qty": "+30", "coins": "240"},
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+  if (target) {
+    target.remove();
+    target = null;
   }
 
-  Widget _buildItem(Map item, IconData icon) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12)),
-      child: Row(children: [
-        Icon(icon, color: AppColors.pink),
-        const SizedBox(width: 10),
-        Text(item["qty"], style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const Spacer(),
-        if (item["off"]!= null) Text(item["off"], style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        const SizedBox(width: 10),
-        if (item["price"]!= null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: AppColors.pink, borderRadius: BorderRadius.circular(20)),
-            child: Text(item["price"], style: const TextStyle(fontWeight: FontWeight.bold))
-          )
-        else
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: AppColors.blue, borderRadius: BorderRadius.circular(20)),
-            child: Row(children: [Text(item["coins"]), const SizedBox(width: 4), Icon(Icons.monetization_on, size: 14, color: AppColors.gold)]),
-          )
-      ]),
-    );
-  }
+  score = 0;
+  shots = 0;
+  hits = 0;
+  combo = 0;
+  bestCombo = 0;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Store")),
-      body: Column(children: [
-        Container(
-          margin: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(10)),
-          child: TabBar(
-            controller: _tabController,
-            indicator: BoxDecoration(gradient: AppColors.gradient, borderRadius: BorderRadius.circular(10)),
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.grey,
-            tabs: const [Tab(text: "Profile"), Tab(text: "Video")],
-          ),
-        ),
-        Expanded(child: TabBarView(
-          controller: _tabController,
-          children: [
-            ListView(padding: const EdgeInsets.all(16), children: profileItems.map((e) => _buildItem(e, Icons.person)).toList()),
-            ListView(padding: const EdgeInsets.all(16), children: videoItems.map((e) => _buildItem(e, Icons.favorite)).toList()),
-          ],
-        ))
-      ]),
-    );
-  }
+  updateStats();
+
+  message.innerText = "Press START";
+  message.style.display = "block";
 }
 
-/// SCREEN 5: MORE / SETTINGS
-class MoreScreen extends StatelessWidget {
-  const MoreScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      "Manage Account", "Orders",
-      "Refer and get +150", "Language", "FAQ", "Social Video Editor App",
-      "Rate App", "Share App", "Contact Us"
-    ];
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("More"),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Chip(
-              avatar: CircleAvatar(backgroundColor: AppColors.gold, child: const Icon(Icons.monetization_on, size: 16, color: Colors.black)),
-              label: const Text("39", style: TextStyle(fontWeight: FontWeight.bold)),
-              backgroundColor: AppColors.card,
-            ),
-          )
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: items.map((e) => Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(10)),
-          child: ListTile(
-            title: Text(e),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
-          ),
-        )).toList(),
-      ),
-    );
-  }
+function spawnTarget() {
+
+  if (!playing) return;
+
+  if (target) target.remove();
+
+  target = document.createElement("div");
+  target.className = "target";
+
+  target.innerHTML = `
+    <div class="head"></div>
+    <div class="body"></div>
+  `;
+
+  const maxX = game.clientWidth - 80;
+  const maxY = game.clientHeight - 130;
+
+  target.style.left = Math.random() * maxX + "px";
+  target.style.top = Math.random() * maxY + "px";
+
+  game.appendChild(target);
+
+  startTime = performance.now();
+
+  target.querySelector(".head").onclick = function(e) {
+    e.stopPropagation();
+    hitTarget(true);
+  };
+
+  target.querySelector(".body").onclick = function(e) {
+    e.stopPropagation();
+    hitTarget(false);
+  };
+
+  setTimeout(() => {
+    if (target && playing) {
+      combo = 0;
+      spawnTarget();
+      updateStats();
+    }
+  }, speeds[document.getElementById("difficulty").value]);
 }
+
+game.onclick = function() {
+  if (!playing) return;
+
+  shots++;
+  combo = 0;
+
+  updateStats();
+};
+
+function hitTarget(headshot) {
+
+  if (!playing) return;
+
+  const reaction = Math.round(performance.now() - startTime);
+
+  shots++;
+  hits++;
+
+  combo++;
+
+  if (combo > bestCombo) {
+    bestCombo = combo;
+  }
+
+  if (headshot) {
+    score += 100 + combo * 5;
+  } else {
+    score += 30;
+  }
+
+  document.getElementById("reaction").innerText =
+    reaction + "ms";
+
+  spawnTarget();
+  updateStats();
+}
+
+function updateStats() {
+
+  document.getElementById("score").innerText = score;
+
+  const acc = shots === 0
+    ? 100
+    : Math.round((hits / shots) * 100);
+
+  document.getElementById("accuracy").innerText =
+    acc + "%";
+
+  document.getElementById("combo").innerText =
+    combo;
+}
+</script>
+
+</body>
+</html>
