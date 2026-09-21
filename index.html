@@ -1,351 +1,604 @@
-game = r'''<!DOCTYPE html>
+code = r'''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Headshot Trainer - FF Style Training Room</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>FF Trainer — Aim Training Room</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-html,body{width:100%;height:100%;overflow:hidden;background:#0b0f14;font-family:Arial,Helvetica,sans-serif;color:#eaf2f8}
-#cv{position:fixed;inset:0;touch-action:none}
-.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(1200px 800px at 50% 18%,#16222e,#0b0f14);z-index:20;padding:18px;text-align:center;overflow-y:auto}
-h1{font-size:32px;letter-spacing:2px;color:#ffd34d;text-shadow:0 0 18px rgba(255,160,0,.35)}
-.sub{color:#8fb8d8;margin:6px 0 18px;font-size:13px;line-height:1.5}
-.btn{background:#1d2b38;border:1px solid #33506b;color:#eaf2f8;padding:13px 26px;border-radius:12px;font-size:16px;margin:6px;min-width:240px;cursor:pointer}
-.btn:active{transform:scale(.95)}
-.btn.gold{background:#ffd34d;color:#201a05;border-color:#ffd34d;font-weight:700}
-.btn.green{background:#2fbf71;border-color:#2fbf71;color:#04150b;font-weight:700}
-.btn.sm{min-width:0;padding:8px 14px;font-size:13px}
-.row{display:flex;flex-wrap:wrap;justify-content:center}
-.card{background:#131e28;border:1px solid #28425c;border-radius:14px;padding:16px;margin:8px;width:270px}
-.card h3{color:#ffd34d;margin-bottom:6px}
-.card p{font-size:13px;color:#9db8cc;margin-bottom:10px;line-height:1.45}
-textarea{width:min(92vw,430px);height:104px;background:#0d151d;border:1px solid #33506b;color:#b7ffca;border-radius:10px;padding:10px;font-size:13px;font-family:monospace;user-select:text;-webkit-user-select:text}
-#aiOut{width:min(92vw,430px);background:#0d151d;border:1px solid #28425c;border-radius:10px;padding:12px;margin:10px 0;font-size:13px;text-align:left;line-height:1.65;min-height:56px;color:#a9d6f5;white-space:pre-wrap}
-.guncard{width:152px;padding:12px}
-.guncard .pr{color:#ffd34d;font-weight:700;margin:4px 0 8px}
-.topbar{position:fixed;top:10px;left:10px;z-index:15;font-size:13px;background:rgba(10,16,22,.62);padding:8px 12px;border-radius:10px;border:1px solid #28425c;line-height:1.55;pointer-events:none}
-#backBtn{position:fixed;top:10px;right:10px;z-index:16}
-#fireBtn{position:fixed;z-index:14;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8f6b,#e63946);border:3px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;box-shadow:0 0 22px rgba(230,57,70,.5);touch-action:none}
-#fireBtn.on{filter:brightness(1.3)}
-#hint{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:15;font-size:12px;color:#7fa3bd;background:rgba(10,16,22,.55);padding:6px 12px;border-radius:8px;pointer-events:none;text-align:center;max-width:92vw}
-.hidden{display:none!important}
-input[type=range]{width:min(80vw,320px)}
-.coin{color:#ffd34d;font-weight:700}
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#0b0e13; font-family:'Segoe UI',Arial,sans-serif; user-select:none; }
+  #game { display:block; width:100vw; height:100vh; cursor:crosshair; }
+
+  /* ---------- Top bar (Quick Settings style) ---------- */
+  #topbar { position:fixed; top:0; left:0; right:0; height:46px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 12px; z-index:50; background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0)); pointer-events:none; }
+  #topbar > * { pointer-events:auto; }
+  .tb-btn { background:#ffb300; color:#111; font-weight:700; border:none; border-radius:6px; padding:7px 14px; cursor:pointer; font-size:13px; box-shadow:0 2px 6px rgba(0,0,0,.4); }
+  .tb-btn.dark { background:#1d232e; color:#ffd54f; border:1px solid #3a4356; }
+  .tb-btn:hover { filter:brightness(1.1); }
+  #cashBox { color:#ffd54f; font-weight:700; font-size:15px; background:rgba(0,0,0,.5); padding:6px 12px; border-radius:20px; }
+  #levelSel { background:#1d232e; color:#fff; border:1px solid #3a4356; border-radius:6px; padding:7px 8px; font-size:13px; }
+
+  /* ---------- Fire button ---------- */
+  #fireBtn { position:fixed; border-radius:50%; z-index:40; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 35% 30%, rgba(255,220,80,.9), rgba(200,120,0,.75));
+    border:3px solid rgba(255,255,255,.7); box-shadow:0 0 18px rgba(255,180,0,.45), inset 0 0 14px rgba(0,0,0,.35);
+    cursor:pointer; touch-action:none; }
+  #fireBtn::after { content:'🔥'; font-size:44%; }
+
+  /* ---------- Crosshair ---------- */
+  #crosshair { position:fixed; z-index:39; width:34px; height:34px; margin:-17px 0 0 -17px; pointer-events:none; }
+  #crosshair::before, #crosshair::after { content:''; position:absolute; background:#37ff8b; box-shadow:0 0 4px #000; }
+  #crosshair::before { left:50%; top:0; width:2px; height:100%; margin-left:-1px; clip-path:polygon(0 0,100% 0,100% 32%,0 32%,0 68%,100% 68%,100% 100%,0 100%); }
+  #crosshair::after { top:50%; left:0; height:2px; width:100%; margin-top:-1px; clip-path:polygon(0 0,32% 0,32% 100%,0 100%,68% 0,100% 0,100% 100%,68% 100%); }
+
+  /* ---------- AI Coach bubble ---------- */
+  #coach { position:fixed; z-index:45; max-width:280px; background:rgba(8,12,20,.88); border:1px solid #37ff8b; border-radius:10px;
+    padding:10px 12px; color:#eafff2; font-size:12.5px; line-height:1.5; display:none; box-shadow:0 4px 18px rgba(0,0,0,.5); }
+  #coach b { color:#37ff8b; }
+  #coach .tag { display:inline-block; background:#37ff8b; color:#04140a; font-weight:800; font-size:10px; padding:2px 7px; border-radius:4px; margin-bottom:6px; letter-spacing:.5px; }
+
+  /* ---------- Side buttons ---------- */
+  #sideBtns { position:fixed; right:10px; top:60px; z-index:50; display:flex; flex-direction:column; gap:8px; }
+  .side-btn { width:46px; height:46px; border-radius:10px; background:rgba(20,26,36,.85); border:1px solid #3a4356; color:#ffd54f; font-size:20px; cursor:pointer; }
+  .side-btn:hover { background:#232c3d; }
+
+  /* ---------- Toggle pills (head/body) ---------- */
+  #hitToggle { position:fixed; left:12px; bottom:16px; z-index:50; display:flex; background:rgba(15,20,28,.85); border:1px solid #3a4356; border-radius:24px; overflow:hidden; }
+  #hitToggle button { border:none; background:transparent; color:#9aa7bb; padding:9px 16px; font-weight:700; font-size:12px; cursor:pointer; }
+  #hitToggle button.on { background:#37ff8b; color:#04140a; }
+
+  /* ---------- Panels ---------- */
+  .panel { position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; }
+  .panel.open { display:flex; }
+  .card { width:min(560px,94vw); max-height:88vh; overflow-y:auto; background:#12161f; border:1px solid #2c3547; border-radius:14px; padding:22px; color:#dbe4f0; }
+  .card h2 { color:#ffd54f; font-size:19px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; }
+  .card h2 .x { cursor:pointer; color:#ff5a6a; font-size:22px; }
+  .card .sub { color:#7f8ba0; font-size:12px; margin-bottom:16px; }
+
+  .wgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+  .wcard { background:#1a2130; border:1px solid #2c3547; border-radius:10px; padding:12px; cursor:pointer; transition:.15s; }
+  .wcard:hover { border-color:#ffb300; }
+  .wcard.equipped { border-color:#37ff8b; box-shadow:0 0 10px rgba(55,255,139,.25); }
+  .wcard .wn { font-weight:800; color:#fff; font-size:14px; }
+  .wcard .ws { font-size:11px; color:#8fa0ba; margin:5px 0; line-height:1.55; }
+  .wcard .wp { color:#ffd54f; font-weight:700; font-size:13px; }
+  .wcard.locked { opacity:.65; }
+
+  .row { display:flex; align-items:center; gap:12px; margin:14px 0; }
+  .row label { width:120px; font-size:13px; color:#aeb9cc; }
+  .row input[type=range] { flex:1; accent-color:#ffb300; }
+  .row .val { width:52px; text-align:right; color:#ffd54f; font-weight:700; font-size:13px; }
+  .btn { background:#ffb300; color:#111; border:none; border-radius:8px; padding:10px 18px; font-weight:800; cursor:pointer; font-size:13px; }
+  .btn.ghost { background:#1d232e; color:#ffd54f; border:1px solid #3a4356; }
+  .btn.green { background:#37ff8b; }
+  .btnrow { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+
+  textarea#hudCode { width:100%; height:64px; background:#0b0f16; color:#7fe7a8; border:1px solid #2c3547; border-radius:8px; padding:10px; font-size:11px; resize:none; }
+  .ai-box { background:#0d1420; border:1px solid #1f3a2c; border-radius:10px; padding:14px; margin-top:14px; font-size:12.5px; line-height:1.65; color:#bfe9cf; }
+  .ai-box .h { color:#37ff8b; font-weight:800; letter-spacing:.5px; font-size:11px; }
+  .pill { display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:700; }
+  .pill.b { background:#2b6cb0; color:#fff; } .pill.a { background:#b07a2b; color:#fff; } .pill.p { background:#c53030; color:#fff; }
+
+  #toast { position:fixed; top:56px; left:50%; transform:translateX(-50%); z-index:200; background:#111827; color:#fff; border:1px solid #37ff8b;
+    padding:10px 20px; border-radius:24px; font-size:13px; display:none; box-shadow:0 6px 20px rgba(0,0,0,.6); }
+  #hpBar { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); width:240px; height:9px; background:rgba(0,0,0,.55); border-radius:6px; z-index:35; overflow:hidden; border:1px solid rgba(255,255,255,.15); }
+  #hpFill { height:100%; width:100%; background:linear-gradient(90deg,#37ff8b,#a3ff37); transition:width .2s; }
 </style>
 </head>
 <body>
-<canvas id="cv"></canvas>
+<canvas id="game"></canvas>
 
-<div id="menu" class="screen">
- <h1>🔥 HEADSHOT TRAINER</h1>
- <div class="sub">Free Fire–style training room with an AI aim coach.<br>Left side = move · Drag FIRE button = aim · Release = shoot</div>
- <div class="btn gold" onclick="ui('levels')">▶ TRAIN</div>
- <div class="btn" onclick="ui('hudscr')">🧠 HUD SETUP (AI ANALYSIS)</div>
- <div class="btn" onclick="ui('shop')">🔫 GUN SHOP</div>
- <div class="btn" onclick="ui('setscr')">⚙ SETTINGS (SENSITIVITY / MODE)</div>
- <div class="sub" style="margin-top:14px">🪙 Coins: <span class="coin" id="mCoins"></span></div>
+<div id="topbar">
+  <button class="tb-btn" onclick="openPanel('shopPanel')">🛒 SHOP</button>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button class="tb-btn dark" onclick="openPanel('hudPanel')">🎮 HUD</button>
+    <select id="levelSel" onchange="setLevel(this.value)">
+      <option value="beginner">🟦 BEGINNER</option>
+      <option value="advanced">🟧 ADVANCED</option>
+      <option value="pro">🟥 PRO</option>
+    </select>
+  </div>
+  <div id="cashBox">💰 <span id="cash">500</span></div>
 </div>
 
-<div id="levels" class="screen hidden">
- <h1>SELECT LEVEL</h1>
- <div class="row">
-  <div class="card"><h3>🟢 BEGINNER</h3><p>AI draws the FULL headshot drag-line from your fire button with exact pixel length. Slow bots, forgiving aim.</p><div class="btn green" onclick="startGame('beginner')">START</div></div>
-  <div class="card"><h3>🟡 ADVANCED</h3><p>Guide line flashes ONCE when you touch the button — memorize it. Faster strafing bots, tighter accuracy.</p><div class="btn green" onclick="startGame('advanced')">START</div></div>
-  <div class="card"><h3>🔴 PRO</h3><p>No guide at all. Fast, erratic bots. Pure muscle memory — but 1.6× coins per hit.</p><div class="btn green" onclick="startGame('pro')">START</div></div>
- </div>
- <div class="btn" onclick="ui('menu')">⬅ BACK</div>
+<div id="sideBtns">
+  <button class="side-btn" onclick="openPanel('sensPanel')" title="Sensitivity">🎯</button>
+  <button class="side-btn" onclick="openPanel('helpPanel')" title="Help">❓</button>
 </div>
 
-<div id="hudscr" class="screen hidden">
- <h1>HUD SETUP</h1>
- <div class="sub">Paste your Free Fire HUD code — the AI reads your button size &amp; position,<br>then builds a custom sensitivity for easy headshots.</div>
- <textarea id="hudCode" placeholder='Example:
-{"fireBtn":{"x":0.84,"y":0.70,"size":76},"aimBtn":{"x":0.66,"y":0.84,"size":58}}'></textarea>
- <div class="row">
-  <div class="btn gold sm" onclick="analyzeHUD()">🧠 ANALYZE MY HUD</div>
-  <div class="btn sm" onclick="loadDefHUD()">Use my saved HUD</div>
- </div>
- <div id="aiOut">🧠 AI: waiting for HUD code…</div>
- <div class="btn green hidden" id="applyBtn" onclick="applyAI()">✔ APPLY AI SENSITIVITY</div>
- <div class="btn" onclick="ui('menu')">⬅ BACK</div>
+<div id="hitToggle">
+  <button id="tgHead" class="on" onclick="setTargetMode('head')">🎯 HEADSHOT</button>
+  <button id="tgBody" onclick="setTargetMode('body')">👤 BODY</button>
 </div>
 
-<div id="shop" class="screen hidden">
- <h1>GUN SHOP</h1>
- <div class="sub">🪙 Coins: <span class="coin" id="sCoins"></span> — earn them by hitting bots in training</div>
- <div class="row" id="gunGrid"></div>
- <div class="btn" onclick="ui('menu')">⬅ BACK</div>
-</div>
+<div id="fireBtn"></div>
+<div id="crosshair"></div>
+<div id="coach"></div>
+<div id="hpBar"><div id="hpFill"></div></div>
+<div id="toast"></div>
 
-<div id="setscr" class="screen hidden">
- <h1>SETTINGS</h1>
- <div class="sub">Sensitivity: <b id="sensVal"></b> &nbsp;<span id="recVal" style="color:#2fbf71"></span></div>
- <input type="range" id="sensR" min="0.5" max="3" step="0.05" oninput="setSens(this.value)">
- <div class="sub" style="margin-top:18px">Training target mode</div>
- <div class="row">
-  <div class="btn sm" id="mHead" onclick="setMode('head')">🎯 HEADSHOT MODE</div>
-  <div class="btn sm" id="mBody" onclick="setMode('body')">🧍 BODY SHOT MODE</div>
- </div>
- <div class="btn" style="margin-top:20px" onclick="ui('menu')">⬅ BACK</div>
-</div>
+<!-- ============ SHOP ============ -->
+<div class="panel" id="shopPanel"><div class="card">
+  <h2>WEAPONS SHOP <span class="x" onclick="closePanels()">✖</span></h2>
+  <div class="sub">Earn cash from hits & kills in training. Buy & equip to train with.</div>
+  <div class="wgrid" id="wgrid"></div>
+</div></div>
 
-<div id="gameUI" class="hidden">
- <div class="topbar" id="gStats"></div>
- <div class="btn sm" id="backBtn" onclick="quitGame()">✖ EXIT</div>
- <div id="fireBtn">FIRE</div>
- <div id="hint"></div>
-</div>
+<!-- ============ HUD ============ -->
+<div class="panel" id="hudPanel"><div class="card">
+  <h2>HUD CUSTOMIZE <span class="x" onclick="closePanels()">✖</span></h2>
+  <div class="sub">Drag the fire button, tune it, then export / import a HUD code (like Free Fire's "Obtain HUD").</div>
+  <div class="row"><label>Button Size</label><input type="range" id="hudSize" min="50" max="160" value="100" oninput="hudPreview()"><span class="val" id="hudSizeV">100</span></div>
+  <div class="row"><label>Opacity</label><input type="range" id="hudOp" min="20" max="100" value="90" oninput="hudPreview()"><span class="val" id="hudOpV">90%</span></div>
+  <div class="btnrow">
+    <button class="btn ghost" onclick="hudRandom()">🎲 Random</button>
+    <button class="btn" onclick="hudExport()">📤 EXPORT CODE</button>
+    <button class="btn green" onclick="hudImport()">📥 OBTAIN HUD</button>
+  </div>
+  <textarea id="hudCode" placeholder="Your HUD code appears here... paste a code here to load it."></textarea>
+  <div class="ai-box" id="hudAI"></div>
+</div></div>
+
+<!-- ============ SENSITIVITY ============ -->
+<div class="panel" id="sensPanel"><div class="card">
+  <h2>SENSITIVITY <span class="x" onclick="closePanels()">✖</span></h2>
+  <div class="sub">The AI builds a sensitivity matched to YOUR fire-button size & position.</div>
+  <div class="row"><label>General</label><input type="range" id="sGen" min="10" max="200" value="100" oninput="sensRead()"><span class="val" id="sGenV">100</span></div>
+  <div class="row"><label>Red Dot</label><input type="range" id="sRed" min="10" max="200" value="100" oninput="sensRead()"><span class="val" id="sRedV">100</span></div>
+  <div class="row"><label>2x Scope</label><input type="range" id="s2x" min="10" max="200" value="90" oninput="sensRead()"><span class="val" id="s2xV">90</span></div>
+  <div class="row"><label>4x Scope</label><input type="range" id="s4x" min="10" max="200" value="80" oninput="sensRead()"><span class="val" id="s4xV">80</span></div>
+  <div class="row"><label>AWM Scope</label><input type="range" id="sAwm" min="10" max="200" value="60" oninput="sensRead()"><span class="val" id="sAwmV">60</span></div>
+  <div class="btnrow"><button class="btn green" onclick="aiSens()">🤖 AI: BUILD PERFECT SENSITIVITY</button></div>
+  <div class="ai-box" id="sensAI"></div>
+</div></div>
+
+<!-- ============ HELP ============ -->
+<div class="panel" id="helpPanel"><div class="card">
+  <h2>HOW TO TRAIN <span class="x" onclick="closePanels()">✖</span></h2>
+  <div class="sub" style="margin-bottom:10px;">Move mouse to aim · <b style="color:#ffd54f">Hold CLICK or press FIRE button to shoot</b> · R to reload</div>
+  <div class="ai-box">
+    <div class="h">🟦 BEGINNER</div>Enemies move slowly. The AI draws a <b>line from your FIRE button</b> to the enemy's head with exact drag instructions based on distance. Follow the line → headshot.<br><br>
+    <div class="h">🟧 ADVANCED</div>Faster enemies, smaller heads. The AI only shows a short guide-line while you hold the fire button — no text.<br><br>
+    <div class="h">🟥 PRO</div>No lines, no help. Fast strafing enemies, tiny head hitboxes, weapon spread. Pure muscle memory.
+  </div>
+</div></div>
 
 <script>
-/* ================= CORE ================= */
-const $=id=>document.getElementById(id);
-const cv=$('cv'),ctx=cv.getContext('2d');
-let W=0,H=0;
-function resize(){const d=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(d,0,0,d,0,0);placeFire();}
-addEventListener('resize',resize);
-addEventListener('contextmenu',e=>e.preventDefault());
+/* ==================================================================
+   FF TRAINER — aim training room prototype
+   ================================================================== */
+const cv = document.getElementById('game'), cx = cv.getContext('2d');
+let W, H;
+function resize(){ W = cv.width = innerWidth; H = cv.height = innerHeight; }
+addEventListener('resize', resize); resize();
 
-const store={get:(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-
-const GUNS={
- ump:{name:'UMP',price:0,dmg:26,cd:240,col:'#cfd8dc',desc:'Starter rifle'},
- mp40:{name:'MP40',price:300,dmg:19,cd:110,col:'#ffb74d',desc:'Very fast fire'},
- m1887:{name:'M1887',price:450,dmg:88,cd:750,col:'#e57373',desc:'Shotgun, falls off far',fo:260},
- ak:{name:'AK',price:600,dmg:38,cd:290,col:'#ba68c8',desc:'Hard hitting AR'},
- awm:{name:'AWM',price:1000,dmg:130,cd:1100,col:'#4dd0e1',desc:'One-tap sniper'}
-};
-const LV={
- beginner:{name:'BEGINNER',spd:45,n:3,tol:70,guide:'full',mult:1},
- advanced:{name:'ADVANCED',spd:80,n:4,tol:35,guide:'ghost',mult:1.2},
- pro:{name:'PRO',spd:112,n:5,tol:18,guide:'off',mult:1.6}
-};
-const S={
- coins:store.get('ff_coins',200),
- owned:store.get('ff_owned',['ump']),
- equip:store.get('ff_equip','ump'),
- sens:store.get('ff_sens',1.2),
- mode:store.get('ff_mode','head'),
- hud:store.get('ff_hud',{fireBtn:{x:0.84,y:0.70,size:76}}),
- rec:null
+/* ---------------- Data ---------------- */
+const WEAPONS = [
+  { id:'ump',   name:'UMP',      price:0,    dmg:22, rpm:600, spread:2.2, color:'#9fb7d9', auto:true  },
+  { id:'mp5',   name:'MP5',      price:600,  dmg:20, rpm:750, spread:2.6, color:'#d9c79f', auto:true  },
+  { id:'p90',   name:'P90',      price:900,  dmg:19, rpm:900, spread:3.2, color:'#c9a0e8', auto:true  },
+  { id:'ak',    name:'AK',       price:1200, dmg:34, rpm:550, spread:1.8, color:'#e8a0a0', auto:true  },
+  { id:'m4',    name:'M4A1',     price:1100, dmg:28, rpm:650, spread:1.4, color:'#a0e8b4', auto:true  },
+  { id:'awm',   name:'AWM',      price:2500, dmg:95, rpm:45,  spread:0.2, color:'#ffd54f', auto:false },
+  { id:'desert',name:'DESERT EAGLE', price:800, dmg:48, rpm:220, spread:1.2, color:'#e8d9a0', auto:false },
+  { id:'thompson',name:'THOMPSON', price:1500, dmg:26, rpm:700, spread:2.0, color:'#d9a06a', auto:true },
+];
+const LEVELS = {
+  beginner: { speed:35, headR:13, bodyR:26, hp:100, hint:'full',   spreadMul:0.6, count:4, label:'BEGINNER' },
+  advanced: { speed:75, headR:9,  bodyR:24, hp:130, hint:'brief',  spreadMul:1.0, count:5, label:'ADVANCED' },
+  pro:      { speed:125,headR:6,  bodyR:22, hp:170, hint:'none',   spreadMul:1.6, count:6, label:'PRO' },
 };
 
-let AC=null;
-function beep(f,d,type,g){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),gn=AC.createGain();o.type=type||'square';o.frequency.value=f;gn.gain.value=g||0.08;o.connect(gn);gn.connect(AC.destination);o.start();o.stop(AC.currentTime+d);}catch(e){}}
+/* ---------------- State ---------------- */
+let cash = +(localStorage.getItem('fft_cash') ?? 500);
+let owned = JSON.parse(localStorage.getItem('fft_owned') ?? '["ump"]');
+let weapon = WEAPONS.find(w=>w.id===(localStorage.getItem('fft_wpn')??'ump'));
+let level = 'beginner';
+let targetMode = 'head';
+let sens = JSON.parse(localStorage.getItem('fft_sens') ?? '{"gen":100,"red":100,"s2":90,"s4":80,"awm":60}');
+let hud = JSON.parse(localStorage.getItem('fft_hud') ?? '{"size":100,"op":90,"x":0,"y":0}'); // x,y = offsets from bottom-right anchor
+let playerHP = 100;
 
-/* ================= UI ================= */
-function ui(id){document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));$(id).classList.remove('hidden');
- if(id==='menu')$('mCoins').textContent=S.coins;
- if(id==='shop'){renderShop();$('sCoins').textContent=S.coins;}
- if(id==='setscr')refreshSettings();}
-function refreshSettings(){$('sensVal').textContent=S.sens.toFixed(2);$('sensR').value=S.sens;
- $('recVal').textContent=S.rec?('· 🧠 AI recommends '+S.rec.toFixed(2)):'';
- $('mHead').classList.toggle('gold',S.mode==='head');$('mBody').classList.toggle('gold',S.mode==='body');}
-function setSens(v){S.sens=+v;store.set('ff_sens',S.sens);refreshSettings();}
-function setMode(m){S.mode=m;store.set('ff_mode',m);refreshSettings();}
+/* Player = fixed center-lower anchor like FF camera */
+const player = { x:()=>W*0.5, y:()=>H*0.62 };
 
-function renderShop(){const g=$('gunGrid');g.innerHTML='';
- Object.entries(GUNS).forEach(([id,gn])=>{const own=S.owned.includes(id),eq=S.equip===id;
-  const d=document.createElement('div');d.className='card guncard';
-  d.innerHTML='<h3 style="color:'+gn.col+'">'+gn.name+'</h3><p>'+gn.desc+'<br>DMG '+gn.dmg+' · '+(1000/gn.cd).toFixed(1)+' shots/s</p><div class="pr">'+(own?(eq?'✔ EQUIPPED':'OWNED'):'🪙 '+gn.price)+'</div>';
-  const b=document.createElement('div');b.className='btn sm '+(own?'green':'gold');b.style.minWidth='110px';
-  b.textContent=own?(eq?'EQUIPPED':'EQUIP'):'BUY';
-  b.onclick=()=>{if(own){S.equip=id;store.set('ff_equip',id);}
-   else if(S.coins>=gn.price){S.coins-=gn.price;S.owned.push(id);S.equip=id;store.set('ff_coins',S.coins);store.set('ff_owned',S.owned);store.set('ff_equip',id);beep(900,.08,'sine');}
-   else{beep(160,.15);b.textContent='NOT ENOUGH COINS';setTimeout(renderShop,700);return;}
-   renderShop();$('sCoins').textContent=S.coins;};
-  d.appendChild(b);g.appendChild(d);});}
+/* Crosshair */
+let aim = { x: W*0.5, y: H*0.4 };
 
-/* ================= HUD AI ================= */
-function loadDefHUD(){$('hudCode').value=JSON.stringify(S.hud);analyzeHUD();}
-function analyzeHUD(){const out=$('aiOut');
- try{const h=JSON.parse($('hudCode').value.trim());
-  if(!h.fireBtn||typeof h.fireBtn.x!=='number'||typeof h.fireBtn.y!=='number')throw 0;
-  if(h.fireBtn.x<0.05||h.fireBtn.x>0.95||h.fireBtn.y<0.05||h.fireBtn.y>0.95)throw 0;
-  h.fireBtn.size=h.fireBtn.size||70;if(h.fireBtn.size<30||h.fireBtn.size>150)throw 0;
-  S.hud=h;store.set('ff_hud',h);
-  const f=h.fireBtn,fx=f.x*W,fy=f.y*H;
-  const room=Math.min(fx,W-fx,fy,H-fy);
-  const sizeNote=f.size<54?'⚠ Small button — finger drags will be shaky':f.size>96?'⚠ Oversized — eats drag space':'✔ Button size is in the sweet spot';
-  const posNote=room<110?'⚠ Too close to screen edge — little room to drag':'✔ Position gives comfortable drag room';
-  const rec=(150/Math.max(room,60))*1.35+(f.size-70)/180;
-  S.rec=Math.round(Math.max(0.6,Math.min(2.8,rec))*20)/20;
-  out.textContent='🧠 AI HUD ANALYSIS\n'
-   +'• Fire button: '+f.size+'px at ('+(f.x*100).toFixed(0)+'%, '+(f.y*100).toFixed(0)+')\n'
-   +'• '+sizeNote+'\n• '+posNote+' ('+Math.round(room)+'px drag room)\n'
-   +'• Aim button: '+(h.aimBtn?h.aimBtn.size+'px @ '+(h.aimBtn.x*100).toFixed(0)+'%':'not set — optional')+'\n'
-   +'→ RECOMMENDED SENSITIVITY: '+S.rec.toFixed(2)+'  (your current: '+S.sens.toFixed(2)+')';
-  $('applyBtn').classList.remove('hidden');placeFire();beep(700,.07,'sine');
- }catch(e){out.textContent='🧠 AI: ❌ Invalid HUD code.\n\nUse JSON like:\n{"fireBtn":{"x":0.84,"y":0.70,"size":76},"aimBtn":{"x":0.66,"y":0.84,"size":58}}\n\nx/y = position (0.0–1.0 of screen), size = button px (30–150).';}}
-function applyAI(){if(!S.rec)return;S.sens=S.rec;store.set('ff_sens',S.sens);
- $('aiOut').textContent+='\n\n✔ Sensitivity '+S.rec.toFixed(2)+' applied! Bigger button = slightly more forgiving aim. Go train!';
- $('applyBtn').classList.add('hidden');beep(1000,.1,'sine');}
+/* Enemies */
+let enemies = [];
+function spawnEnemy(){
+  const L = LEVELS[level];
+  const side = Math.random();
+  let x, y;
+  if (side < 0.5){ x = Math.random()*W; y = -40; } else { x = Math.random()<.5?-40:W+40; y = Math.random()*H*0.5; }
+  enemies.push({
+    x, y, hp:L.hp, maxHp:L.hp,
+    dir: Math.random()*Math.PI*2,
+    t: Math.random()*100,
+    strafe: 0.6 + Math.random()*0.8,
+    dead:0, hitFlash:0
+  });
+}
+function fillEnemies(){ enemies = []; for(let i=0;i<LEVELS[level].count;i++) spawnEnemy(); }
+fillEnemies();
 
-function placeFire(){const f=(S.hud&&S.hud.fireBtn)||{x:0.84,y:0.7,size:76};const b=$('fireBtn');
- b.style.width=b.style.height=f.size+'px';
- b.style.left=(f.x*W-f.size/2)+'px';b.style.top=(f.y*H-f.size/2)+'px';
- b.style.fontSize=Math.max(10,f.size*0.22)+'px';}
+/* Tracers / floaters */
+let tracers = [], floaters = [];
 
-/* ================= GAME ================= */
-const P={x:0,y:0,vx:0,vy:0};
-let ens=[],pops=[],aim={x:0,y:0},lvl=null,lastShot=0,firing=null,joy=null,playing=false;
-let st={shots:0,hits:0,hs:0};
-const keys={};
+/* ---------------- Input ---------------- */
+let firing = false, lastShot = 0, reloading = 0;
+addEventListener('mousemove', e => {
+  const k = (sens.gen/100) * (weapon.id==='awm'? sens.awm/100 : 1);
+  aim.x += (e.movementX||0) * k; aim.y += (e.movementY||0) * k;
+  aim.x = Math.max(10, Math.min(W-10, aim.x)); aim.y = Math.max(10, Math.min(H-10, aim.y));
+});
+addEventListener('mousedown', e => { if (e.target === cv) firing = true; });
+addEventListener('mouseup', () => firing = false);
+addEventListener('keydown', e => { if (e.key==='r'||e.key==='R') reload(); });
 
-function startGame(k){lvl=LV[k];
- document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
- $('gameUI').classList.remove('hidden');placeFire();
- ens=[];for(let i=0;i<lvl.n;i++)ens.push(mkEnemy());
- P.x=0;P.y=0;P.vx=P.vy=0;aim={x:W/2,y:H/2-60};
- pops=[];lastShot=0;firing=null;joy=null;st={shots:0,hits:0,hs:0};playing=true;
- $('hint').textContent=k==='pro'?'🔴 PRO — no guide. Trust your muscle memory. Drag FIRE to aim, release to shoot.'
-  :k==='advanced'?'🟡 ADVANCED — guide flashes once per touch. Memorize the line, then drag!'
-  :'🟢 Drag along the AI line from FIRE to the head, release to shoot. Left side moves you.';
- beep(500,.1,'sine');}
-function quitGame(){playing=false;firing=null;joy=null;$('gameUI').classList.add('hidden');ui('menu');}
+/* Fire button */
+const fb = document.getElementById('fireBtn');
+let fbDrag = null;
+function placeFB(){
+  const s = hud.size;
+  const ax = W - 30 - s - (hud.x||0), ay = H - 30 - s - (hud.y||0);
+  fb.style.width = fb.style.height = s+'px';
+  fb.style.left = ax+'px'; fb.style.top = ay+'px';
+  fb.style.opacity = (hud.op??90)/100;
+}
+placeFB();
+fb.addEventListener('pointerdown', e => { firing = true; fb.setPointerCapture(e.pointerId); fbDrag = { id:e.pointerId, moved:false }; });
+fb.addEventListener('pointermove', e => {
+  if (!fbDrag || fbDrag.id!==e.pointerId) return;
+  fbDrag.moved = true;
+  hud.x = Math.max(-120, Math.min(W*0.7, W - 30 - hud.size - e.clientX));
+  hud.y = Math.max(-120, Math.min(H*0.7, H - 30 - hud.size - e.clientY));
+  placeFB(); hudAnalyze();
+});
+fb.addEventListener('pointerup', () => { firing = false; fbDrag = null; saveHUD(); });
 
-function mkEnemy(){const a=Math.random()*Math.PI*2,d=260+Math.random()*540;
- return{x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,hp:100,tx:0,ty:0,nt:0,ph:Math.random()*9,dead:0};}
+function reload(){ reloading = 0.9; toast('⟳ Reloading...'); }
 
-function updEnemies(dt){const t=performance.now();
- ens.forEach(e=>{
-  if(e.dead>0){e.dead-=dt;if(e.dead<=0){const n=mkEnemy();for(const k in n)e[k]=n[k];}return;}
-  e.nt-=dt;
-  if(e.nt<=0){const a=Math.random()*Math.PI*2,d=180+Math.random()*620;e.tx=P.x+Math.cos(a)*d;e.ty=P.y+Math.sin(a)*d;e.nt=2+Math.random()*2.5;}
-  const dx=e.tx-e.x,dy=e.ty-e.y,L=Math.hypot(dx,dy)||1;
-  const sp=lvl.spd*(0.8+0.4*Math.sin(t/300+e.ph));
-  e.x+=dx/L*sp*dt+Math.cos(t/220+e.ph)*32*dt;
-  e.y+=dy/L*sp*dt+Math.sin(t/260+e.ph)*32*dt;
-  const ddx=e.x-P.x,ddy=e.y-P.y,dd=Math.hypot(ddx,ddy);
-  if(dd>950){e.x-=ddx/dd*(dd-950);e.y-=ddy/dd*(dd-950);}});}
+/* ---------------- Shooting ---------------- */
+function shoot(now){
+  if (reloading > 0) return;
+  const interval = 60000 / weapon.rpm;
+  if (now - lastShot < interval) return;
+  lastShot = now;
+  const L = LEVELS[level];
+  const shots = weapon.id==='awm'||weapon.id==='desert' ? 1 : (weapon.auto?1:1);
+  for (let i=0;i<shots;i++){
+    const ang = Math.atan2(aim.y - player.y(), aim.x - player.x())
+      + (Math.random()-0.5) * weapon.spread * L.spreadMul * Math.PI/180;
+    fireRay(ang, now);
+  }
+  playerHP = Math.max(0, playerHP - 0); // player doesn't take damage in training
+}
 
-function sPos(e){const sx=W/2+(e.x-P.x),sy=H/2+(e.y-P.y);
- const dist=Math.hypot(e.x-P.x,e.y-P.y);
- const sc=Math.max(0.5,Math.min(1.15,1.15-dist/1400));
- return{sx,sy,sc,dist};}
-function headPos(e){const p=sPos(e);return{hx:p.sx,hy:p.sy-30*p.sc};}
+function fireRay(ang, now){
+  const px = player.x(), py = player.y();
+  const dx = Math.cos(ang), dy = Math.sin(ang);
+  let best = null, bestT = 1e9, bestPart = null;
+  for (const e of enemies){
+    if (e.dead > 0) continue;
+    const L = LEVELS[level];
+    // head = offset from body center
+    const hx = e.x + Math.cos(e.dir)*L.bodyR*0.9, hy = e.y + Math.sin(e.dir)*L.bodyR*0.9 - L.bodyR*0.4;
+    for (const [part, cxx, cyy, r, mult] of [['head',hx,hy,L.headR,2.0],['body',e.x,e.y,L.bodyR,1.0]]){
+      const t = rayCircle(px,py,dx,dy,cxx,cyy,r);
+      if (t !== null && t < bestT){
+        // body circle contains head — if head test passed at earlier/smaller t prefer head
+        if (part==='body' && best && bestPart==='head' && best.t <= t) continue;
+        best = { e, t }; bestT = t; bestPart = part;
+      }
+    }
+  }
+  const endT = best ? bestT : Math.max(W,H);
+  tracers.push({ x1:px, y1:py, x2:px+dx*endT, y2:py+dy*endT, life:1 });
+  if (best){
+    const e = best.e;
+    const headshot = bestPart==='head';
+    const dmg = Math.round(weapon.dmg * (headshot?2.0:1.0));
+    e.hp -= dmg; e.hitFlash = 1;
+    floaters.push({ x:e.x, y:e.y-34, txt:(headshot?'HEADSHOT -':'-')+dmg, col: headshot?'#ffd54f':'#ff8a8a', life:1 });
+    if (headshot){ cash += 50; } else cash += 20;
+    if (e.hp <= 0){
+      e.dead = 1; cash += headshot?100:50;
+      floaters.push({ x:e.x, y:e.y, txt:'💀 +$'+(headshot?100:50), col:'#37ff8b', life:1.4 });
+      setTimeout(spawnEnemy, 700);
+    }
+    updateCash();
+  }
+}
+function rayCircle(px,py,dx,dy,cx2,cy2,r){
+  const fx = px-cx2, fy = py-cy2;
+  const b = fx*dx+fy*dy, c = fx*fx+fy*fy-r*r;
+  if (c > 0 && b > 0) return null;
+  const disc = b*b - c;
+  if (disc < 0) return null;
+  const t = -b - Math.sqrt(disc);
+  return t < 0 ? 0 : t;
+}
 
-function targetEnemy(){let best=null,bd=1e9;
- ens.forEach(e=>{if(e.dead>0)return;const p=sPos(e);
-  const tx=p.sx,ty=S.mode==='head'?p.sy-30*p.sc:p.sy;
-  const d=Math.hypot(tx-aim.x,ty-aim.y);
-  if(d<bd){bd=d;best={tx,ty};}});
- return best;}
+/* ---------------- AI coach ---------------- */
+function nearestEnemy(){
+  let best=null, bd=1e9;
+  for (const e of enemies){ if (e.dead>0) continue;
+    const d = Math.hypot(e.x-player.x(), e.y-player.y());
+    if (d<bd){ bd=d; best=e; } }
+  return best ? { e:best, d:bd } : null;
+}
+function coachUpdate(now){
+  const c = document.getElementById('coach');
+  const L = LEVELS[level];
+  if (L.hint === 'none'){ c.style.display='none'; return; }
+  const n = nearestEnemy();
+  if (!n){ c.style.display='none'; return; }
+  const { e, d } = n;
+  const distM = Math.round(d / 12); // fake meters
+  // predicted head position (lead the strafe)
+  const lead = Math.min(40, d*0.06) * (LEVELS[level].speed/35);
+  const hx = e.x + Math.cos(e.dir)*LEVELS[level].bodyR*0.9 + Math.cos(e.dir)*lead*0.4;
+  const hy = e.y + Math.sin(e.dir)*LEVELS[level].bodyR*0.9 - LEVELS[level].bodyR*0.4 + Math.sin(e.dir)*lead*0.4;
 
-function pop(x,y,t,c){pops.push({x,y,t,c,life:1});}
+  c.style.display='block';
+  const fbr = fb.getBoundingClientRect();
+  const fbx = fbr.left + fbr.width/2, fby = fbr.top + fbr.height/2;
+  const vx = hx - fbx, vy = hy - fby;
+  if (L.hint === 'full'){
+    const dirH = vx>8?'RIGHT':vx<-8?'LEFT':'·';
+    const dirV = vy>8?'DOWN':vy<-8?'UP':'·';
+    c.innerHTML = `<span class="tag">🤖 AI COACH</span><br>Enemy at <b>${distM}m</b> — ${targetMode.toUpperCase()} shot<br>`+
+      `Drag <b>${Math.round(Math.abs(vx))}px ${dirH}</b>, <b>${Math.round(Math.abs(vy))}px ${dirV}</b> from FIRE button<br>`+
+      `<span style="color:#7f8ba0">Sens ${sens.gen} · ${weapon.name} · follow the green line</span>`;
+    c.style.left = Math.min(W-300, fbr.left - 300)+'px';
+    c.style.top = Math.max(56, fbr.top - 130)+'px';
+  } else {
+    c.style.display='none';
+  }
+  // guide line from fire button to predicted head
+  if (L.hint==='full' || (L.hint==='brief' && firing)){
+    cx.save();
+    cx.strokeStyle = 'rgba(55,255,139,.85)'; cx.lineWidth=2.5; cx.setLineDash([10,8]);
+    cx.beginPath(); cx.moveTo(fbx, fby); cx.lineTo(hx, hy); cx.stroke();
+    cx.setLineDash([]);
+    cx.fillStyle='#37ff8b'; cx.beginPath(); cx.arc(hx,hy,5,0,7); cx.fill();
+    cx.restore();
+  }
+}
 
-function fire(){const g=GUNS[S.equip],now=performance.now();
- if(now-lastShot<g.cd)return;lastShot=now;st.shots++;
- beep(140,.06,'sawtooth',.12);
- const pa=Math.atan2(aim.y-H/2,aim.x-W/2);P.vx-=Math.cos(pa)*2.5;P.vy-=Math.sin(pa)*2.5;
- const tolF=Math.sqrt(((S.hud.fireBtn&&S.hud.fireBtn.size)||76)/76);
- const tol=lvl.tol*tolF;
- let hit=null,head=false,hx=0,hy=0;
- ens.forEach(e=>{if(e.dead>0||hit)return;const p=sPos(e),hp=headPos(e);
-  const rh=11*p.sc+tol*.35,rb=20*p.sc+tol*.35;
-  if(Math.hypot(hp.hx-aim.x,hp.hy-aim.y)<rh){hit=e;head=true;hx=hp.hx;hy=hp.hy;}
-  else if(Math.hypot(p.sx-aim.x,p.sy-aim.y)<rb){hit=e;head=false;hx=p.sx;hy=p.sy;}});
- if(!hit){pop(aim.x,aim.y-22,'MISS','#78909c');return;}
- st.hits++;if(head)st.hs++;
- let dmg=g.dmg;if(g.fo&&sPos(hit).dist>g.fo)dmg*=.35;
- hit.hp-=dmg;
- let c,txt,col;
- if(head){c=Math.round((S.mode==='head'?12:6)*lvl.mult);txt='HEADSHOT +'+c;col='#ffd34d';beep(1300,.09,'sine',.12);}
- else{c=Math.round((S.mode==='body'?8:1)*lvl.mult);txt=(S.mode==='body'?'BODY +':'body +')+c;col='#8fd3ff';beep(800,.06,'sine');}
- S.coins+=c;store.set('ff_coins',S.coins);pop(hx,hy-14,txt,col);
- if(hit.hp<=0){hit.dead=1.2;const b=Math.round(25*lvl.mult);S.coins+=b;store.set('ff_coins',S.coins);
-  const p=sPos(hit);pop(p.sx,p.sy-52*p.sc,'ELIM +'+b,'#2fbf71');beep(400,.15,'triangle',.14);}}
+/* ---------------- Loop ---------------- */
+let last = 0;
+function loop(now){
+  const dt = Math.min(0.05, (now-last)/1000); last = now;
+  update(dt, now);
+  draw(now);
+  requestAnimationFrame(loop);
+}
+function update(dt, now){
+  const L = LEVELS[level];
+  for (const e of enemies){
+    if (e.dead > 0){ e.dead += dt; continue; }
+    e.t += dt;
+    e.hitFlash = Math.max(0, e.hitFlash - dt*4);
+    // movement: drift toward mid-screen + strafe
+    const cxT = W*0.5, cyT = H*0.35;
+    const toC = Math.atan2(cyT - e.y, cxT - e.x);
+    let moveA = toC + Math.sin(e.t * e.strafe * 2) * 1.1;
+    // keep inside arena
+    if (e.x < 60) moveA = 0; if (e.x > W-60) moveA = Math.PI;
+    if (e.y < 60) moveA = Math.PI/2; if (e.y > H*0.55) moveA = -Math.PI/2;
+    e.dir = moveA;
+    e.x += Math.cos(moveA) * L.speed * dt;
+    e.y += Math.sin(moveA) * L.speed * dt;
+  }
+  enemies = enemies.filter(e => e.dead < 1.2);
+  tracers.forEach(t => t.life -= dt*6); tracers = tracers.filter(t=>t.life>0);
+  floaters.forEach(f => { f.life -= dt; f.y -= dt*30; }); floaters = floaters.filter(f=>f.life>0);
+  if (reloading > 0) reloading -= dt;
+  if (firing && (weapon.auto || now-lastShot > 60000/weapon.rpm)) shoot(now);
+  coachUpdate(now);
+  const ch = document.getElementById('crosshair');
+  ch.style.left = aim.x+'px'; ch.style.top = aim.y+'px';
+}
 
-/* ---- fire button: drag to aim, release to shoot ---- */
-const fb=$('fireBtn');
-function tStart(x,y,id){firing={id,sx:x,sy:y,ax:aim.x,ay:aim.y,t0:performance.now()};
- const t=targetEnemy();
- if(t&&lvl&&lvl.guide!=='off'){firing.gx=x+(t.tx-aim.x)/S.sens;firing.gy=y+(t.ty-aim.y)/S.sens;}
- fb.classList.add('on');beep(300,.04,'sine',.05);}
-function tMove(x,y){if(!firing)return;
- aim.x=Math.max(8,Math.min(W-8,firing.ax+(x-firing.sx)*S.sens));
- aim.y=Math.max(8,Math.min(H-8,firing.ay+(y-firing.sy)*S.sens));}
-function tEnd(){if(!firing)return;fb.classList.remove('on');fire();firing=null;}
+function draw(now){
+  // floor
+  const g = cx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#232a36'); g.addColorStop(1,'#161b24');
+  cx.fillStyle = g; cx.fillRect(0,0,W,H);
+  cx.strokeStyle = 'rgba(255,255,255,.045)'; cx.lineWidth=1;
+  for (let x=0;x<W;x+=64){ cx.beginPath(); cx.moveTo(x,0); cx.lineTo(x,H); cx.stroke(); }
+  for (let y=0;y<H;y+=64){ cx.beginPath(); cx.moveTo(0,y); cx.lineTo(W,y); cx.stroke(); }
+  // arena zone
+  cx.strokeStyle = 'rgba(55,255,139,.25)'; cx.lineWidth=2; cx.setLineDash([14,10]);
+  cx.strokeRect(40, 40, W-80, H*0.55); cx.setLineDash([]);
+  cx.fillStyle='rgba(55,255,139,.5)'; cx.font='700 11px Arial';
+  cx.fillText('TRAINING ZONE — ' + LEVELS[level].label, 52, 60);
 
-fb.addEventListener('touchstart',e=>{e.preventDefault();const t=e.changedTouches[0];tStart(t.clientX,t.clientY,t.identifier);},{passive:false});
-fb.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(firing&&t.identifier===firing.id)tMove(t.clientX,t.clientY);},{passive:false});
-fb.addEventListener('touchend',e=>{e.preventDefault();for(const t of e.changedTouches)if(firing&&t.identifier===firing.id)tEnd();},{passive:false});
-fb.addEventListener('touchcancel',()=>{fb.classList.remove('on');firing=null;},{passive:false});
-fb.addEventListener('mousedown',e=>tStart(e.clientX,e.clientY,'m'));
-addEventListener('mousemove',e=>{if(firing&&firing.id==='m')tMove(e.clientX,e.clientY);});
-addEventListener('mouseup',()=>{if(firing&&firing.id==='m')tEnd();});
+  // player
+  const px = player.x(), py = player.y();
+  cx.save(); cx.translate(px,py);
+  cx.fillStyle='rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(0,10,16,6,0,0,7); cx.fill();
+  cx.fillStyle='#3f8cff'; cx.beginPath(); cx.arc(0,0,13,0,7); cx.fill();
+  cx.strokeStyle='#fff'; cx.lineWidth=2; cx.stroke();
+  const aa = Math.atan2(aim.y-py, aim.x-px);
+  cx.rotate(aa); cx.fillStyle = weapon.color; cx.fillRect(8,-3,22,6);
+  cx.restore();
 
-/* ---- movement: left-half joystick + WASD ---- */
-cv.addEventListener('touchstart',e=>{for(const t of e.changedTouches){if(t.clientX<W*0.45&&!joy)joy={id:t.identifier,x:t.clientX,y:t.clientY};}},{passive:true});
-cv.addEventListener('touchmove',e=>{for(const t of e.changedTouches){if(joy&&t.identifier===joy.id){let dx=(t.clientX-joy.x)/45,dy=(t.clientY-joy.y)/45;const L=Math.hypot(dx,dy);if(L>1){dx/=L;dy/=L;}P.vx=dx*230;P.vy=dy*230;}}},{passive:true});
-const joyEnd=e=>{for(const t of e.changedTouches)if(joy&&t.identifier===joy.id){joy=null;P.vx=P.vy=0;}};
-cv.addEventListener('touchend',joyEnd);cv.addEventListener('touchcancel',joyEnd);
-addEventListener('keydown',e=>keys[e.key.toLowerCase()]=1);
-addEventListener('keyup',e=>keys[e.key.toLowerCase()]=0);
+  // enemies
+  const L = LEVELS[level];
+  for (const e of enemies){
+    if (e.dead>0) continue;
+    cx.save(); cx.translate(e.x,e.y);
+    cx.fillStyle='rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(0,12,14,5,0,0,7); cx.fill();
+    cx.rotate(e.dir);
+    cx.fillStyle = e.hitFlash>0 ? '#ff6b6b' : '#c0392b';
+    cx.beginPath(); cx.arc(0,0,L.bodyR,0,7); cx.fill();
+    cx.strokeStyle='#7a1f14'; cx.lineWidth=2; cx.stroke();
+    // head
+    cx.fillStyle = e.hitFlash>0 ? '#ffe08a' : '#f1c27d';
+    cx.beginPath(); cx.arc(L.bodyR*0.9, -L.bodyR*0.4, L.headR, 0, 7); cx.fill();
+    cx.strokeStyle='#8a5a2b'; cx.stroke();
+    cx.restore();
+    // hp bar
+    const bw = 44;
+    cx.fillStyle='rgba(0,0,0,.6)'; cx.fillRect(e.x-bw/2, e.y-L.bodyR-22, bw, 5);
+    cx.fillStyle='#ff5a6a'; cx.fillRect(e.x-bw/2, e.y-L.bodyR-22, bw*Math.max(0,e.hp/e.maxHp), 5);
+  }
 
-/* ================= RENDER ================= */
-function draw(){ctx.clearRect(0,0,W,H);
- ctx.strokeStyle='rgba(70,110,140,0.14)';ctx.lineWidth=1;
- const gs=80,ox=((-P.x)%gs+gs)%gs,oy=((-P.y)%gs+gs)%gs;
- for(let x=ox;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
- for(let y=oy;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
- if(!playing)return;
+  // tracers
+  for (const t of tracers){
+    cx.strokeStyle = `rgba(255,213,79,${t.life})`; cx.lineWidth=2;
+    cx.beginPath(); cx.moveTo(t.x1,t.y1); cx.lineTo(t.x2,t.y2); cx.stroke();
+  }
+  // floaters
+  cx.font='800 14px Arial'; cx.textAlign='center';
+  for (const f of floaters){
+    cx.globalAlpha = Math.min(1, f.life);
+    cx.fillStyle=f.col; cx.fillText(f.txt, f.x, f.y);
+    cx.globalAlpha = 1;
+  }
+  cx.textAlign='left';
 
- ens.forEach(e=>{if(e.dead>0)return;const p=sPos(e);
-  if(p.sx<-70||p.sx>W+70||p.sy<-70||p.sy>H+70)return;
-  ctx.fillStyle='rgba(230,57,70,0.22)';ctx.beginPath();ctx.arc(p.sx,p.sy,26*p.sc,0,7);ctx.fill();
-  ctx.fillStyle='#c0392b';ctx.beginPath();ctx.arc(p.sx,p.sy,18*p.sc,0,7);ctx.fill();
-  ctx.strokeStyle='#7a1f14';ctx.lineWidth=2;ctx.stroke();
-  ctx.fillStyle='#f1c27d';ctx.beginPath();ctx.arc(p.sx,p.sy-30*p.sc,10*p.sc,0,7);ctx.fill();
-  ctx.strokeStyle='#222';ctx.stroke();
-  if(S.mode==='head'){ctx.strokeStyle='rgba(255,211,77,.9)';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(p.sx,p.sy-30*p.sc,13*p.sc,0,7);ctx.stroke();}
-  ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(p.sx-20*p.sc,p.sy-52*p.sc,40*p.sc,5);
-  ctx.fillStyle='#2fbf71';ctx.fillRect(p.sx-20*p.sc,p.sy-52*p.sc,40*p.sc*Math.max(0,e.hp)/100,5);});
+  // reloading indicator
+  if (reloading>0){
+    cx.fillStyle='rgba(0,0,0,.6)'; cx.fillRect(W/2-70, H-70, 140, 26);
+    cx.fillStyle='#ffb300'; cx.font='700 13px Arial'; cx.textAlign='center';
+    cx.fillText('⟳ RELOADING...', W/2, H-52); cx.textAlign='left';
+  }
+}
 
- ctx.fillStyle='rgba(47,191,113,0.22)';ctx.beginPath();ctx.arc(W/2,H/2,26,0,7);ctx.fill();
- ctx.fillStyle='#2fbf71';ctx.beginPath();ctx.arc(W/2,H/2,18,0,7);ctx.fill();
- const pa=Math.atan2(aim.y-H/2,aim.x-W/2);
- ctx.strokeStyle='#ffd34d';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(W/2,H/2);ctx.lineTo(W/2+Math.cos(pa)*32,H/2+Math.sin(pa)*32);ctx.stroke();
+/* ---------------- UI logic ---------------- */
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',1800); }
+function updateCash(){ document.getElementById('cash').textContent = cash; localStorage.setItem('fft_cash', cash); }
+function openPanel(id){ document.getElementById(id).classList.add('open'); if(id==='shopPanel') renderShop(); if(id==='hudPanel') hudAnalyze(); }
+function closePanels(){ document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open')); }
+function setLevel(l){ level=l; fillEnemies(); toast('Level: '+LEVELS[l].label); }
+function setTargetMode(m){ targetMode=m;
+  document.getElementById('tgHead').classList.toggle('on', m==='head');
+  document.getElementById('tgBody').classList.toggle('on', m==='body');
+}
 
- if(firing&&firing.gx!==undefined&&(lvl.guide==='full'||(lvl.guide==='ghost'&&performance.now()-firing.t0<900))){
-  const col=S.mode==='head'?'#ffd34d':'#ff9f43';
-  ctx.strokeStyle=col;ctx.lineWidth=3;ctx.setLineDash([9,7]);
-  ctx.beginPath();ctx.moveTo(firing.sx,firing.sy);ctx.lineTo(firing.gx,firing.gy);ctx.stroke();ctx.setLineDash([]);
-  const len=Math.round(Math.hypot(firing.gx-firing.sx,firing.gy-firing.sy));
-  const mx2=(firing.sx+firing.gx)/2,my2=(firing.sy+firing.gy)/2;
-  ctx.fillStyle='#fff';ctx.font='bold 13px Arial';ctx.textAlign='center';
-  ctx.fillText('drag '+len+'px',mx2,my2-10);
-  ctx.fillStyle=col;ctx.beginPath();ctx.arc(firing.gx,firing.gy,7,0,7);ctx.fill();}
+/* ---------- Shop ---------- */
+function renderShop(){
+  const g = document.getElementById('wgrid'); g.innerHTML='';
+  for (const w of WEAPONS){
+    const isOwned = owned.includes(w.id), isEq = weapon.id===w.id;
+    const div = document.createElement('div');
+    div.className = 'wcard' + (isEq?' equipped':'') + (!isOwned?' locked':'');
+    div.innerHTML = `<div class="wn" style="color:${w.color}">${w.name}</div>
+      <div class="ws">DMG ${w.dmg} · RPM ${w.rpm}<br>SPREAD ${w.spread}° · ${w.auto?'AUTO':'SEMI'}</div>
+      <div class="wp">${isEq?'✔ EQUIPPED':isOwned?'EQUIP':'💰 $'+w.price}</div>`;
+    div.onclick = () => {
+      if (isEq) return;
+      if (isOwned){ equip(w); return; }
+      if (cash >= w.price){ cash -= w.price; owned.push(w.id); updateCash(); equip(w); renderShop(); toast('Purchased '+w.name+'!'); saveOwned(); }
+      else toast('Not enough cash! Hit some headshots 💰');
+    };
+    g.appendChild(div);
+  }
+}
+function equip(w){ weapon=w; localStorage.setItem('fft_wpn', w.id); renderShop(); toast('Equipped '+w.name); }
+function saveOwned(){ localStorage.setItem('fft_owned', JSON.stringify(owned)); }
 
- ctx.strokeStyle='#fff';ctx.lineWidth=2;
- ctx.beginPath();ctx.arc(aim.x,aim.y,12,0,7);
- ctx.moveTo(aim.x-18,aim.y);ctx.lineTo(aim.x-6,aim.y);ctx.moveTo(aim.x+6,aim.y);ctx.lineTo(aim.x+18,aim.y);
- ctx.moveTo(aim.x,aim.y-18);ctx.lineTo(aim.x,aim.y-6);ctx.moveTo(aim.x,aim.y+6);ctx.lineTo(aim.x,aim.y+18);ctx.stroke();
+/* ---------- HUD ---------- */
+function hudPreview(){
+  hud.size = +document.getElementById('hudSize').value;
+  hud.op = +document.getElementById('hudOp').value;
+  document.getElementById('hudSizeV').textContent = hud.size;
+  document.getElementById('hudOpV').textContent = hud.op+'%';
+  placeFB(); hudAnalyze();
+}
+function hudExport(){
+  const code = btoa(JSON.stringify({ v:1, btn:{ size:hud.size, op:hud.op, x:Math.round(hud.x||0), y:Math.round(hud.y||0) }, sens, wpn:weapon.id }));
+  document.getElementById('hudCode').value = code;
+  navigator.clipboard?.writeText(code);
+  toast('HUD code copied! 📋');
+}
+function hudImport(){
+  const code = document.getElementById('hudCode').value.trim();
+  if (!code) return toast('Paste a HUD code first');
+  try {
+    const d = JSON.parse(atob(code));
+    hud = { size:d.btn.size, op:d.btn.op, x:d.btn.x||0, y:d.btn.y||0 };
+    if (d.sens) sens = d.sens;
+    if (d.wpn && WEAPONS.find(w=>w.id===d.wpn)) weapon = WEAPONS.find(w=>w.id===d.wpn);
+    document.getElementById('hudSize').value = hud.size;
+    document.getElementById('hudOp').value = hud.op;
+    hudPreview(); sensWrite(); saveHUD();
+    toast('HUD loaded! ✅');
+  } catch(e){ toast('Invalid HUD code ❌'); }
+}
+function hudRandom(){
+  hud.size = 60 + Math.round(Math.random()*90);
+  hud.x = Math.round(Math.random()*180); hud.y = Math.round(Math.random()*160);
+  hud.op = 70 + Math.round(Math.random()*30);
+  document.getElementById('hudSize').value = hud.size;
+  document.getElementById('hudOp').value = hud.op;
+  hudPreview(); saveHUD();
+}
+function saveHUD(){ localStorage.setItem('fft_hud', JSON.stringify(hud)); }
+function hudAnalyze(){
+  const box = document.getElementById('hudAI');
+  const diag = Math.round(Math.hypot(W,H));
+  const sizePct = Math.round(hud.size / (diag*0.09) * 100);
+  let verdict, tip;
+  if (hud.size < 75){ verdict='small & precise'; tip='High control, but harder to hit fast under pressure.'; }
+  else if (hud.size <= 115){ verdict='balanced'; tip='Great all-round size for drag headshots.'; }
+  else { verdict='big & forgiving'; tip='Easy to press, but you will over-drag — lower your sensitivity.'; }
+  const edge = (hud.x||0) < 10 ? 'very close to the screen edge' : 'well inside the safe zone';
+  box.innerHTML = `<div class="h">🤖 HUD AI ANALYSIS</div>
+    Button is <b>${verdict}</b> (${hud.size}px ≈ ${sizePct}% of ideal). ${tip}<br>
+    Position: ${edge}.<br>
+    Recommended sensitivity for this HUD: <b>${aiSensValue()}%</b> → tap <b>AI: BUILD PERFECT SENSITIVITY</b> in the Sensitivity panel.`;
+}
+function aiSensValue(){
+  // smaller button → higher sens (less travel needed); bigger → lower sens
+  return Math.max(40, Math.min(190, Math.round(185 - hud.size*0.95)));
+}
 
- if(joy){ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(joy.x,joy.y,45,0,7);ctx.stroke();}
+/* ---------- Sensitivity ---------- */
+function sensRead(){
+  sens.gen = +document.getElementById('sGen').value;
+  sens.red = +document.getElementById('sRed').value;
+  sens.s2  = +document.getElementById('s2x').value;
+  sens.s4  = +document.getElementById('s4x').value;
+  sens.awm = +document.getElementById('sAwm').value;
+  ['sGen','sRed','s2x','s4x','sAwm'].forEach((id,i)=>{
+    document.getElementById(id+'V').textContent = [sens.gen,sens.red,sens.s2,sens.s4,sens.awm][i];
+  });
+  localStorage.setItem('fft_sens', JSON.stringify(sens));
+}
+function sensWrite(){
+  document.getElementById('sGen').value = sens.gen; document.getElementById('sRed').value = sens.red;
+  document.getElementById('s2x').value = sens.s2; document.getElementById('s4x').value = sens.s4;
+  document.getElementById('sAwm').value = sens.awm; sensRead();
+}
+function aiSens(){
+  const base = aiSensValue();
+  sens.gen = base;
+  sens.red = Math.min(200, base + 10);
+  sens.s2  = Math.max(30, base - 10);
+  sens.s4  = Math.max(30, base - 25);
+  sens.awm = Math.max(20, base - 40);
+  sensWrite();
+  document.getElementById('sensAI').innerHTML = `<div class="h">🤖 AI SENSITIVITY BUILT</div>
+    Based on your <b>${hud.size}px</b> fire button at its current position, the AI set:<br>
+    General <b>${sens.gen}</b> · Red Dot <b>${sens.red}</b> · 2x <b>${sens.s2}</b> · 4x <b>${sens.s4}</b> · AWM <b>${sens.awm}</b><br>
+    <span style="color:#7f8ba0">Logic: ${hud.size<75?'small button → faster response sens':'larger button → smoother lower sens'} so your drag stops exactly on the head.</span>`;
+  toast('AI sensitivity applied! 🎯');
+}
 
- pops.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.c;ctx.font='bold 16px Arial';ctx.textAlign='center';ctx.fillText(p.t,p.x,p.y);});
- ctx.globalAlpha=1;}
-
-/* ================= LOOP ================= */
-let lastT=performance.now();
-function loop(){const now=performance.now();const dt=Math.min(0.05,(now-lastT)/1000);lastT=now;
- if(playing){updEnemies(dt);
-  let mx=(keys['d']?1:0)-(keys['a']?1:0),my=(keys['s']?1:0)-(keys['w']?1:0);
-  if(mx||my){const L=Math.hypot(mx,my);P.vx=mx/L*230;P.vy=my/L*230;}
-  P.x+=P.vx*dt;P.y+=P.vy*dt;
-  if(!joy&&!mx&&!my){P.vx*=0.86;P.vy*=0.86;}
-  pops.forEach(p=>{p.y-=32*dt;p.life-=dt*0.85;});pops=pops.filter(p=>p.life>0);
-  const acc=st.shots?Math.round(st.hits/st.shots*100):0;
-  $('gStats').innerHTML='🪙 <span class="coin">'+S.coins+'</span> · '+GUNS[S.equip].name+' · '+lvl.name+'<br>Hits '+st.hits+'/'+st.shots+' · HS '+st.hs+' · Acc '+acc+'%<br>Sens '+S.sens.toFixed(2)+(S.mode==='head'?' · 🎯 HEAD':' · 🧍 BODY');}
- draw();requestAnimationFrame(loop);}
-
-resize();ui('menu');requestAnimationFrame(loop);
+/* ---------- init ---------- */
+sensWrite(); hudPreview(); updateCash();
+requestAnimationFrame(loop);
 </script>
 </body>
-</html>'''
-
-path='/mnt/agents/output/ff_headshot_trainer.html'
-open(path,'w').write(game)
-import os
-print('saved', path, os.path.getsize(path), 'bytes')
+</html>
+'''
+with open('/mnt/agents/output/ff_trainer.html', 'w') as f:
+    f.write(code)
+print(len(code), 'bytes written')
